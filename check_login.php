@@ -10,7 +10,8 @@ if (!isset($_SESSION)) {
     session_start();
 }
 
-//Check to see if setup is enabled
+
+// Check to see if setup is enabled
 if (!isset($config_enable_setup) || $config_enable_setup == 1) {
     header("Location: setup.php");
     exit;
@@ -18,9 +19,23 @@ if (!isset($config_enable_setup) || $config_enable_setup == 1) {
 
 // Check user is logged in with a valid session
 if (!isset($_SESSION['logged']) || !$_SESSION['logged']) {
-    header("Location: login.php");
+    if ($_SERVER["REQUEST_URI"] == "/") {
+        header("Location: login.php");
+    } else {
+        header("Location: login.php?last_visited=" . base64_encode($_SERVER["REQUEST_URI"]) );
+    }
     exit;
 }
+
+// Check user type
+if ($_SESSION['user_type'] !== 1) {
+    header("Location: login.php");
+    exit();
+}
+
+// Set Timezone
+require_once "inc_set_timezone.php";
+
 
 // User IP & UA
 $session_ip = sanitizeInput(getIP());
@@ -28,19 +43,24 @@ $session_user_agent = sanitizeInput($_SERVER['HTTP_USER_AGENT']);
 
 $session_user_id = intval($_SESSION['user_id']);
 
-$sql = mysqli_query($mysqli, "SELECT * FROM users, user_settings WHERE users.user_id = user_settings.user_id AND users.user_id = $session_user_id");
+$sql = mysqli_query(
+    $mysqli,
+    "SELECT * FROM users
+    LEFT JOIN user_settings ON users.user_id = user_settings.user_id
+    LEFT JOIN user_roles ON user_settings.user_role = user_roles.user_role_id
+    WHERE users.user_id = $session_user_id");
+
 $row = mysqli_fetch_array($sql);
 $session_name = sanitizeInput($row['user_name']);
 $session_email = $row['user_email'];
 $session_avatar = $row['user_avatar'];
-$session_token = $row['user_token'];
+$session_token = $row['user_token']; // MFA Token
 $session_user_role = intval($row['user_role']);
-if ($session_user_role == 3) {
-    $session_user_role_display = "Administrator";
-} elseif ($session_user_role == 2) {
-    $session_user_role_display = "Technician";
+$session_user_role_display = sanitizeInput($row['user_role_name']);
+if (isset($row['user_role_is_admin']) && $row['user_role_is_admin'] == 1) {
+    $session_is_admin = true;
 } else {
-    $session_user_role_display = "Accountant";
+    $session_is_admin = false;
 }
 $session_user_config_force_mfa = intval($row['user_config_force_mfa']);
 $user_config_records_per_page = intval($row['user_config_records_per_page']);
@@ -52,14 +72,39 @@ $session_company_name = $row['company_name'];
 $session_company_country = $row['company_country'];
 $session_company_locale = $row['company_locale'];
 $session_company_currency = $row['company_currency'];
-$session_timezone = $row['config_timezone'];
 
-// Set Timezone to the companies timezone
-date_default_timezone_set($session_timezone);
 
-//Set Currency Format
+// Set Currency Format
 $currency_format = numfmt_create($session_company_locale, NumberFormatter::CURRENCY);
 
+
+try {
+    // Get User Client Access Permissions
+    $user_client_access_sql = "SELECT client_id FROM user_permissions WHERE user_id = $session_user_id";
+    $user_client_access_result = mysqli_query($mysqli, $user_client_access_sql);
+
+    $client_access_array = [];
+    while ($row = mysqli_fetch_assoc($user_client_access_result)) {
+        $client_access_array[] = $row['client_id'];
+    }
+
+    $client_access_string = implode(',', $client_access_array);
+
+    // Client access permission check
+    //  Default allow, if a list of allowed clients is set & the user isn't an admin, restrict them
+    $access_permission_query = "";
+    if ($client_access_string && !$session_is_admin) {
+        $access_permission_query = "AND clients.client_id IN ($client_access_string)";
+    }
+
+} catch (Exception $e) {
+    // Handle exception
+    error_log('MySQL error: ' . $e->getMessage());
+    $access_permission_query = ""; // Ensure safe default if query fails
+}
+
+
+// Include the settings vars
 require_once "get_settings.php";
 
 
@@ -74,12 +119,12 @@ if ($iPod || $iPhone || $iPad) {
     $session_map_source = "google";
 }
 
-//Get Notification Count for the badge on the top nav
+
+// Check if mobile device
+$session_mobile = isMobile();
+
+
+// Get Notification Count for the badge on the top nav
 $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT('notification_id') AS num FROM notifications WHERE (notification_user_id = $session_user_id OR notification_user_id = 0) AND notification_dismissed_at IS NULL"));
 $num_notifications = $row['num'];
-
-// FORCE MFA Setup
-//if ($session_user_config_force_mfa == 1 && $session_token == NULL) {
-//    header("Location: force_mfa.php");
-//}
 

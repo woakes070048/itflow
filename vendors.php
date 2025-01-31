@@ -4,7 +4,7 @@
 $sort = "vendor_name";
 $order = "ASC";
 
-require_once "inc_all.php";
+require_once "includes/inc_all.php";
 
 
 //Rebuild URL
@@ -17,7 +17,7 @@ $sql = mysqli_query(
     AND vendor_template = 0
     AND DATE(vendor_created_at) BETWEEN '$dtf' AND '$dtt'
     AND (vendor_name LIKE '%$q%' OR vendor_description LIKE '%$q%' OR vendor_account_number LIKE '%$q%' OR vendor_website LIKE '%$q%' OR vendor_contact_name LIKE '%$q%' OR vendor_email LIKE '%$q%' OR vendor_phone LIKE '%$phone_query%')
-    AND vendor_archived_at IS NULL
+    AND vendor_$archive_query
     ORDER BY $sort $order LIMIT $record_from, $record_to"
 );
 
@@ -45,13 +45,23 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-8">
+                        <div class="btn-toolbar float-right">
+                            <div class="btn-group mr-2">
+                                <a href="?<?php echo $url_query_strings_sort ?>&archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>" 
+                                    class="btn btn-<?php if ($archived == 1) { echo "primary"; } else { echo "default"; } ?>">
+                                    <i class="fa fa-fw fa-archive mr-2"></i>Archived
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="collapse mt-3 <?php if (!empty($_GET['dtf']) || $_GET['canned_date'] !== "custom" ) { echo "show"; } ?>" id="advancedFilter">
                     <div class="row">
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Canned Date</label>
-                                <select class="form-control select2" name="canned_date">
+                                <select onchange="this.form.submit()" class="form-control select2" name="canned_date">
                                     <option <?php if ($_GET['canned_date'] == "custom") { echo "selected"; } ?> value="custom">Custom</option>
                                     <option <?php if ($_GET['canned_date'] == "today") { echo "selected"; } ?> value="today">Today</option>
                                     <option <?php if ($_GET['canned_date'] == "yesterday") { echo "selected"; } ?> value="yesterday">Yesterday</option>
@@ -67,13 +77,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Date From</label>
-                                <input type="date" class="form-control" name="dtf" max="2999-12-31" value="<?php echo nullable_htmlentities($dtf); ?>">
+                                <input onchange="this.form.submit()" type="date" class="form-control" name="dtf" max="2999-12-31" value="<?php echo nullable_htmlentities($dtf); ?>">
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Date To</label>
-                                <input type="date" class="form-control" name="dtt" max="2999-12-31" value="<?php echo nullable_htmlentities($dtt); ?>">
+                                <input onchange="this.form.submit()" type="date" class="form-control" name="dtt" max="2999-12-31" value="<?php echo nullable_htmlentities($dtt); ?>">
                             </div>
                         </div>
                     </div>
@@ -84,9 +94,21 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <table class="table table-striped table-hover table-borderless">
                     <thead class="<?php if ($num_rows[0] == 0) { echo "d-none"; } ?>">
                     <tr>
-                        <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=vendor_name&order=<?php echo $disp; ?>">Vendor</a></th>
-                        <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=vendor_description&order=<?php echo $disp; ?>">Description</a></th>
-                        <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=vendor_contact_name&order=<?php echo $disp; ?>">Contact</a></th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=vendor_name&order=<?php echo $disp; ?>">
+                                Vendor <?php if ($sort == 'vendor_name') { echo $order_icon; } ?>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=vendor_description&order=<?php echo $disp; ?>">
+                                Description <?php if ($sort == 'vendor_description') { echo $order_icon; } ?>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=vendor_contact_name&order=<?php echo $disp; ?>">
+                                Contact <?php if ($sort == 'vendor_contact_name') { echo $order_icon; } ?>
+                            </a>
+                        </th>
                         <th class="text-center">Action</th>
                     </tr>
                     </thead>
@@ -171,7 +193,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                         <?php
 
-                        require "vendor_edit_modal.php";
+                        require "modals/vendor_edit_modal.php";
 
 
                     }
@@ -181,13 +203,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     </tbody>
                 </table>
             </div>
-            <?php require_once "pagination.php";
+            <?php require_once "includes/filter_footer.php";
  ?>
         </div>
     </div>
 
 <?php
-require_once "vendor_add_modal.php";
+require_once "modals/vendor_add_modal.php";
 
-require_once "footer.php";
+require_once "includes/footer.php";
 

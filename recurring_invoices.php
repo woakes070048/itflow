@@ -4,8 +4,10 @@
 $sort = "recurring_next_date";
 $order = "ASC";
 
-require_once "inc_all.php";
+require_once "includes/inc_all.php";
 
+// Perms
+enforceUserPermission('module_sales');
 
 //Rebuild URL
 $url_query_strings_sort = http_build_query($get_copy);
@@ -15,6 +17,7 @@ $sql = mysqli_query(
     "SELECT SQL_CALC_FOUND_ROWS * FROM recurring
     LEFT JOIN clients ON recurring_client_id = client_id
     LEFT JOIN categories ON recurring_category_id = category_id
+    LEFT JOIN recurring_payments ON recurring_payment_recurring_invoice_id = recurring_id
     WHERE (CONCAT(recurring_prefix,recurring_number) LIKE '%$q%' OR recurring_frequency LIKE '%$q%' OR recurring_scope LIKE '%$q%' OR client_name LIKE '%$q%' OR category_name LIKE '%$q%')
     AND DATE(recurring_created_at) BETWEEN '$dtf' AND '$dtt'
     ORDER BY $sort $order LIMIT $record_from, $record_to");
@@ -27,7 +30,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
     <div class="card-header py-2">
         <h3 class="card-title mt-2"><i class="fa fa-redo-alt mr-2"></i>Recurring Invoices</h3>
         <div class="card-tools">
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addRecurringModal"><i class="fas fa-plus mr-2"></i>Create</button>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addRecurringModal"><i class="fas fa-plus mr-2"></i>New Recurring Invoice</button>
         </div>
     </div>
 
@@ -41,6 +44,10 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#advancedFilter"><i class="fas fa-filter"></i></button>
                             <button class="btn btn-primary"><i class="fa fa-search"></i></button>
                         </div>
+                    </div>
+                </div>
+                <div class="col-sm-8">
+                    <div class="btn-group float-right">
                     </div>
                 </div>
             </div>
@@ -82,16 +89,56 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
             <table class="table table-striped table-borderless table-hover">
                 <thead class="text-dark <?php if ($num_rows[0] == 0) { echo "d-none"; } ?>">
                 <tr>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_number&order=<?php echo $disp; ?>">Number</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_next_date&order=<?php echo $disp; ?>">Next Date</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_scope&order=<?php echo $disp; ?>">Scope</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=client_name&order=<?php echo $disp; ?>">Client</a></th>
-                    <th class="text-right"><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_amount&order=<?php echo $disp; ?>">Amount</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_frequency&order=<?php echo $disp; ?>">Frequency</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_last_sent&order=<?php echo $disp; ?>">Last Sent</a></th>
-
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=category_name&order=<?php echo $disp; ?>">Category</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_status&order=<?php echo $disp; ?>">Status</a></th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_number&order=<?php echo $disp; ?>">
+                            Number <?php if ($sort == 'recurring_number') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_next_date&order=<?php echo $disp; ?>">
+                            Next Date <?php if ($sort == 'recurring_next_date') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_scope&order=<?php echo $disp; ?>">
+                            Scope <?php if ($sort == 'recurring_scope') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=client_name&order=<?php echo $disp; ?>">
+                            Client <?php if ($sort == 'client_name') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th class="text-right">
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_amount&order=<?php echo $disp; ?>">
+                            Amount <?php if ($sort == 'recurring_amount') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_frequency&order=<?php echo $disp; ?>">
+                            Frequency <?php if ($sort == 'recurring_frequency') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_last_sent&order=<?php echo $disp; ?>">
+                            Last Sent <?php if ($sort == 'recurring_last_sent') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=category_name&order=<?php echo $disp; ?>">
+                            Category <?php if ($sort == 'category_name') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_payment_recurring_invoice_id&order=<?php echo $disp; ?>">
+                            Auto Pay <?php if ($sort == 'recurring_payment_recurring_invoice_id') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=recurring_status&order=<?php echo $disp; ?>">
+                            Status <?php if ($sort == 'recurring_status') { echo $order_icon; } ?>
+                        </a>
+                    </th>
                     <th class="text-center">Action</th>
                 </tr>
                 </thead>
@@ -126,6 +173,23 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         $status = "Inactive";
                         $status_badge_color = "secondary";
                     }
+                    $recurring_payment_id = intval($row['recurring_payment_id']);
+                    $recurring_payment_recurring_invoice_id = intval($row['recurring_payment_recurring_invoice_id']);
+                    if ($recurring_payment_recurring_invoice_id) {
+                        $auto_pay_display = "
+                            Yes
+                            <a href='post.php?delete_recurring_payment=$recurring_payment_id' title='Remove'>
+                                <i class='fas fa-fw fa-times-circle'></i>
+                            </a>
+                        ";
+                    } else {
+                        $auto_pay_display = "
+                            <a href='#' data-toggle='modal' data-target='#addRecurringPaymentModal$recurring_id'>
+                                Create
+                            </a>
+                        ";
+                        require "modals/recurring_payment_add_modal.php";
+                    }
 
                     ?>
 
@@ -140,6 +204,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <td><?php echo ucwords($recurring_frequency); ?>ly</td>
                         <td><?php echo $recurring_last_sent; ?></td>
                         <td><?php echo $category_name; ?></td>
+                        <td><?php echo $auto_pay_display; ?></td>
                         <td>
                             <span class="p-2 badge badge-<?php echo $status_badge_color; ?>">
                                 <?php echo $status; ?>
@@ -155,17 +220,19 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                     <a class="dropdown-item" href="#" data-toggle="modal" data-target="#editRecurringModal<?php echo $recurring_id; ?>">
                                         <i class="fas fa-fw fa-edit mr-2"></i>Edit
                                     </a>
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-danger text-bold confirm-link" href="post.php?delete_recurring=<?php echo $recurring_id; ?>">
-                                        <i class="fas fa-fw fa-trash mr-2"></i>Delete
-                                    </a>
+                                    <?php if ($status !== 'Active') { ?>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item text-danger text-bold confirm-link" href="post.php?delete_recurring=<?php echo $recurring_id; ?>">
+                                            <i class="fas fa-fw fa-trash mr-2"></i>Delete
+                                        </a>
+                                    <?php } ?>
                                 </div>
                             </div>
                         </td>
                     </tr>
 
                     <?php
-                    require "recurring_invoice_edit_modal.php";
+                    require "modals/recurring_invoice_edit_modal.php";
 
 
                     }
@@ -174,18 +241,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 </tbody>
             </table>
         </div>
-        <?php require_once "pagination.php";
+        <?php require_once "includes/filter_footer.php";
  ?>
     </div>
 </div>
 
 <?php
 
-require_once "recurring_invoice_add_modal.php";
+require_once "modals/recurring_invoice_add_modal.php";
 
-require_once "category_quick_add_modal.php";
-
-require_once "footer.php";
-
-
-?>
+require_once "includes/footer.php";

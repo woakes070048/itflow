@@ -7,7 +7,7 @@ if (file_exists("config.php")) {
 
 include "functions.php";
 
-include "database_version.php";
+include "includes/database_version.php";
 
 
 if (!isset($config_enable_setup)) {
@@ -20,6 +20,7 @@ if ($config_enable_setup == 0) {
 }
 
 include_once "settings_localization_array.php";
+$errorLog = ini_get('error_log') ?: "Debian/Ubuntu default is usually /var/log/apache2/error.log";
 
 // Get a list of all available timezones
 $timezones = DateTimeZone::listIdentifiers();
@@ -33,13 +34,19 @@ if (isset($_POST['add_database'])) {
         exit;
     }
 
-    $host = trim($_POST['host']);
-    $database = trim($_POST['database']);
-    $username = trim($_POST['username']);
-    $password = trim($_POST['password']);
+    $host = filter_var(trim($_POST['host']), FILTER_SANITIZE_STRING);
+    $database = filter_var(trim($_POST['database']), FILTER_SANITIZE_STRING);
+    $username = filter_var(trim($_POST['username']), FILTER_SANITIZE_STRING);
+    $password = filter_var(trim($_POST['password']), FILTER_SANITIZE_STRING);
     $config_base_url = $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+    $config_base_url = rtrim($config_base_url, '/');
 
     $installation_id = randomString(32);
+
+    // Ensure variables meet specific criteria (very basic examples)
+    if (!preg_match('/^[a-zA-Z0-9.-]+$/', $host)) {
+        die('Invalid host format.');
+    }
 
     // Test database connection before writing it to config.php
 
@@ -49,10 +56,10 @@ if (isset($_POST['add_database'])) {
     }
 
     $new_config = "<?php\n\n";
-    $new_config .= sprintf("\$dbhost = '%s';\n", addslashes($host));
-    $new_config .= sprintf("\$dbusername = '%s';\n", addslashes($username));
-    $new_config .= sprintf("\$dbpassword = '%s';\n", addslashes($password));
-    $new_config .= sprintf("\$database = '%s';\n", addslashes($database));
+    $new_config .= "\$dbhost = " . var_export($host, true) . ";\n";
+    $new_config .= "\$dbusername = " . var_export($username, true) . ";\n";
+    $new_config .= "\$dbpassword = " . var_export($password, true) . ";\n";
+    $new_config .= "\$database = " . var_export($database, true) . ";\n";
     $new_config .= "\$mysqli = mysqli_connect(\$dbhost, \$dbusername, \$dbpassword, \$database) or die('Database Connection Failed');\n";
     $new_config .= "\$config_app_name = 'ITFlow';\n";
     $new_config .= sprintf("\$config_base_url = '%s';\n", addslashes($config_base_url));
@@ -170,7 +177,7 @@ if (isset($_POST['add_user'])) {
     //Create Settings
     mysqli_query($mysqli,"INSERT INTO user_settings SET user_id = 1, user_role = 3");
 
-    $_SESSION['alert_message'] = "User <strong>$name</strong> created!";
+    $_SESSION['alert_message'] = "User <strong>$name</strong> created";
 
     header("Location: setup.php?company");
     exit;
@@ -209,7 +216,7 @@ if (isset($_POST['add_company_settings'])) {
         $new_file_name = md5(time() . $file_name) . '.' . $file_extension;
 
         // check if file has one of the following extensions
-        $allowed_file_extensions = array('jpg', 'gif', 'png');
+        $allowed_file_extensions = array('jpg', 'jpeg', 'png');
 
         if (in_array($file_extension,$allowed_file_extensions) === false) {
             $file_error = 1;
@@ -236,61 +243,118 @@ if (isset($_POST['add_company_settings'])) {
         }
     }
 
-
-
     $latest_database_version = LATEST_DATABASE_VERSION;
-    mysqli_query($mysqli,"INSERT INTO settings SET company_id = 1, config_current_database_version = '$latest_database_version', config_invoice_prefix = 'INV-', config_invoice_next_number = 1, config_recurring_prefix = 'REC-', config_recurring_next_number = 1, config_invoice_overdue_reminders = '1,3,7', config_quote_prefix = 'QUO-', config_quote_next_number = 1, config_default_net_terms = 30, config_ticket_next_number = 1, config_ticket_prefix = 'TCK-', config_timezone = '$timezone'");
+    mysqli_query($mysqli,"INSERT INTO settings SET company_id = 1, config_current_database_version = '$latest_database_version', config_invoice_prefix = 'INV-', config_invoice_next_number = 1, config_recurring_prefix = 'REC-', config_recurring_next_number = 1, config_invoice_overdue_reminders = '1,3,7', config_quote_prefix = 'QUO-', config_quote_next_number = 1, config_default_net_terms = 30, config_ticket_next_number = 1, config_ticket_prefix = 'TCK-'");
 
-    # Used only for the install script to grab the generated cronkey and insert into the db
-    if (file_exists("uploads/tmp/cronkey.php")) {
-        include "uploads/tmp/cronkey.php";
-
-
-        mysqli_query($mysqli,"UPDATE settings SET config_cron_key = '$itflow_install_script_generated_cronkey'");
-
-        unlink('uploads/tmp/cronkey.php');
-    }
-
-    
-
-    // Create Main Account Types
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Asset', account_type_parent = 1, account_type_description = 'Assets are economic resources which are expected to benefit the business in the future.'");
-
-    $account_type_id = mysqli_insert_id($mysqli);
-
-    // Create Default Cash Account
-    mysqli_query($mysqli,"INSERT INTO accounts SET account_name = 'Cash', account_type = $account_type_id, account_currency_code = '$currency_code'");
-
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Liability', account_type_parent = 2, account_type_description = 'Liabilities are obligations of the business entity. They are usually classified as current liabilities (due within one year or less) and long-term liabilities (due after one year).'");
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Equity', account_type_parent = 3, account_type_description = 'Equity represents the owners stake in the business after liabilities have been deducted.'");
-    //Create Secondary Account Types
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Current Asset', account_type_parent = 1, account_type_description = 'Current assets are expected to be consumed within one year or less.'");
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Fixed Asset', account_type_parent = 1, account_type_description = 'Fixed assets are expected to benefit the business for more than one year.'");
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Other Asset', account_type_parent = 1, account_type_description = 'Other assets are assets that do not fit into any of the other asset categories.'");
-
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Current Liability', account_type_parent = 2, account_type_description = 'Current liabilities are expected to be paid within one year or less.'");
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Long Term Liability', account_type_parent = 2, account_type_description = 'Long term liabilities are expected to be paid after one year.'");
-    mysqli_query($mysqli,"INSERT INTO account_types SET account_type_name = 'Other Liability', account_type_parent = 2, account_type_description = 'Other liabilities are liabilities that do not fit into any of the other liability categories.'");
-
-    //Create Categories
+    // Create Categories
+    // Expense Categories Examples
     mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Office Supplies', category_type = 'Expense', category_color = 'blue'");
-    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Travel', category_type = 'Expense', category_color = 'red'");
-    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Advertising', category_type = 'Expense', category_color = 'green'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Travel', category_type = 'Expense', category_color = 'purple'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Advertising', category_type = 'Expense', category_color = 'orange'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Processing Fee', category_type = 'Expense', category_color = 'gray'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Shipping and Postage', category_type = 'Expense', category_color = 'teal'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Software', category_type = 'Expense', category_color = 'lightblue'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Bank Fees', category_type = 'Expense', category_color = 'yellow'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Payroll', category_type = 'Expense', category_color = 'green'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Professional Services', category_type = 'Expense', category_color = 'darkblue'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Contractor', category_type = 'Expense', category_color = 'brown'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Insurance', category_type = 'Expense', category_color = 'red'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Infrastructure', category_type = 'Expense', category_color = 'darkgreen'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Equipment', category_type = 'Expense', category_color = 'gray'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Education', category_type = 'Expense', category_color = 'lightyellow'");
 
-    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Service', category_type = 'Income', category_color = 'blue'");
+    // Income Categories Examples
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Managed Services', category_type = 'Income', category_color = 'green'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Consulting', category_type = 'Income', category_color = 'blue'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Projects', category_type = 'Income', category_color = 'purple'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Hardware Sales', category_type = 'Income', category_color = 'silver'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Software Sales', category_type = 'Income', category_color = 'lightblue'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Cloud Services', category_type = 'Income', category_color = 'skyblue'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Support', category_type = 'Income', category_color = 'yellow'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Training', category_type = 'Income', category_color = 'lightyellow'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Telecom Services', category_type = 'Income', category_color = 'orange'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Backup', category_type = 'Income', category_color = 'darkblue'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Security', category_type = 'Income', category_color = 'red'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Licensing', category_type = 'Income', category_color = 'green'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Monitoring', category_type = 'Income', category_color = 'teal'");
 
+    // Referral Examples
     mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Friend', category_type = 'Referral', category_color = 'blue'");
-    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Search Engine', category_type = 'Referral', category_color = 'red'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Search', category_type = 'Referral', category_color = 'orange'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Social Media', category_type = 'Referral', category_color = 'green'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Email', category_type = 'Referral', category_color = 'yellow'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Partner', category_type = 'Referral', category_color = 'purple'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Event', category_type = 'Referral', category_color = 'red'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Affiliate', category_type = 'Referral', category_color = 'pink'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Client', category_type = 'Referral', category_color = 'lightblue'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Influencer', category_type = 'Referral', category_color = 'turquoise'");
 
+    // Payment Methods
     mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Cash', category_type = 'Payment Method', category_color = 'blue'");
     mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Check', category_type = 'Payment Method', category_color = 'red'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Bank Transfer', category_type = 'Payment Method', category_color = 'green'");
+    mysqli_query($mysqli,"INSERT INTO categories SET category_name = 'Credit Card', category_type = 'Payment Method', category_color = 'purple'");
 
-    //Create Calendar
+    // Default Calendar
     mysqli_query($mysqli,"INSERT INTO calendars SET calendar_name = 'Default', calendar_color = 'blue'");
 
+    // Add default ticket statuses
+    mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'New', ticket_status_color = '#dc3545'"); // Default ID for new tickets is 1
+    mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'Open', ticket_status_color = '#007bff'"); // 2
+    mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'On Hold', ticket_status_color = '#28a745'"); // 3
+    mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'Resolved', ticket_status_color = '#343a40'"); // 4 (was auto-close)
+    mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'Closed', ticket_status_color = '#343a40'"); // 5
+
+    // Add default modules
+    mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_client', module_description = 'General client & contact management'");
+    mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_support', module_description = 'Access to ticketing, assets and documentation'");
+    mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_credential', module_description = 'Access to client credentials - usernames, passwords and 2FA codes'");
+    mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_sales', module_description = 'Access to quotes, invoices and products'");
+    mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_financial', module_description = 'Access to payments, accounts, expenses and budgets'");
+    mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_reporting', module_description = 'Access to all reports'");
+
+    // Add default roles
+    mysqli_query($mysqli, "INSERT INTO user_roles SET user_role_id = 1, user_role_name = 'Accountant', user_role_description = 'Built-in - Limited access to financial-focused modules'");
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 1, user_role_permission_level = 1"); // Read clients
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 2, user_role_permission_level = 1"); // Read support
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 4, user_role_permission_level = 1"); // Read sales
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 5, user_role_permission_level = 2"); // Modify financial
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 6, user_role_permission_level = 1"); // Read reports
+
+    mysqli_query($mysqli, "INSERT INTO user_roles SET user_role_id = 2, user_role_name = 'Technician', user_role_description = 'Built-in - Limited access to technical-focused modules'");
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 1, user_role_permission_level = 2"); // Modify clients
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 2, user_role_permission_level = 2"); // Modify support
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 3, user_role_permission_level = 2"); // Modify credentials
+    mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 4, user_role_permission_level = 2"); // Modify sales
+
+    mysqli_query($mysqli, "INSERT INTO user_roles SET user_role_id = 3, user_role_name = 'Administrator', user_role_description = 'Built-in - Full administrative access to all modules (including user management)', user_role_is_admin = 1");
+
+    // Custom Links
+    mysqli_query($mysqli,"INSERT INTO custom_links SET custom_link_name = 'Docs', custom_link_uri = 'https://docs.itflow.org', custom_link_new_tab = 1, custom_link_icon = 'question-circle'");
 
 
-    $_SESSION['alert_message'] = "Company <strong>$name</strong> created!";
+    $_SESSION['alert_message'] = "Company <strong>$name</strong> created";
+
+    header("Location: setup.php?localization");
+
+}
+
+if (isset($_POST['add_localization_settings'])) {
+
+    $locale = sanitizeInput($_POST['locale']);
+    $currency_code = sanitizeInput($_POST['currency_code']);
+    $timezone = sanitizeInput($_POST['timezone']);
+    $phone_mask = intval($_POST['phone_mask']);
+
+    mysqli_query($mysqli,"UPDATE companies SET company_locale = '$locale', company_currency = '$currency_code' WHERE company_id = 1");
+
+    mysqli_query($mysqli,"UPDATE settings SET config_timezone = '$timezone', config_phone_mask = $phone_mask WHERE company_id = 1");
+
+    // Create Default Cash Account
+    mysqli_query($mysqli,"INSERT INTO accounts SET account_name = 'Cash', account_currency_code = '$currency_code'");
+
+
+    $_SESSION['alert_message'] = "Localization Info saved";
 
     header("Location: setup.php?telemetry");
 
@@ -300,12 +364,15 @@ if (isset($_POST['add_telemetry'])) {
 
     if (isset($_POST['share_data']) && $_POST['share_data'] == 1) {
 
+        mysqli_query($mysqli,"UPDATE settings SET config_telemetry = 2");
+
         $comments = sanitizeInput($_POST['comments']);
 
         $sql = mysqli_query($mysqli,"SELECT * FROM companies WHERE company_id = 1");
         $row = mysqli_fetch_array($sql);
 
         $company_name = $row['company_name'];
+        $website = $row['company_website'];
         $city = $row['company_city'];
         $state = $row['company_state'];
         $country = $row['company_country'];
@@ -315,6 +382,7 @@ if (isset($_POST['add_telemetry'])) {
             array(
                 'installation_id' => "$installation_id",
                 'company_name' => "$company_name",
+                'website' => "$website",
                 'city' => "$city",
                 'state' => "$state",
                 'country' => "$country",
@@ -369,7 +437,7 @@ if (isset($_POST['add_telemetry'])) {
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="plugins/fontawesome-free/css/all.min.css">
     <!-- Theme style -->
-    <link rel="stylesheet" href="dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="plugins/adminlte/css/adminlte.min.css">
     <!-- Custom Style Sheet -->
     <link href="plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css">
     <link href="plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css" rel="stylesheet" type="text/css">
@@ -401,7 +469,7 @@ if (isset($_POST['add_telemetry'])) {
 
         <!-- Brand Logo -->
         <a href="https://itflow.org" class="brand-link">
-            <h3 class="brand-text font-weight-light">ITFlow</h3>
+            <h3 class="brand-text font-weight-light"><i class="fas fa-paper-plane text-primary mr-2"></i><span class="text-primary text-bold">IT</span>Flow</h3>
         </a>
 
         <!-- Sidebar -->
@@ -411,28 +479,41 @@ if (isset($_POST['add_telemetry'])) {
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                     <li class="nav-item">
+                        <a href="?checks" class="nav-link <?php if (isset($_GET['checks'])) { echo "active"; } ?>">
+                            <i class="nav-icon fas fa-check"></i>
+                            <p>1 - Checks</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
                         <a href="?database" class="nav-link <?php if (isset($_GET['database'])) { echo "active"; } ?>">
                             <i class="nav-icon fas fa-database"></i>
-                            <p>Database</p>
+                            <p>2 - Database</p>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="?user" class="nav-link <?php if (isset($_GET['user'])) { echo "active"; } ?>">
                             <i class="nav-icon fas fa-user"></i>
-                            <p>User</p>
+                            <p>3 - User</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="?company" class="nav-link <?php if (isset($_GET['company'])) { echo "active"; } ?>">
                             <i class="nav-icon fas fa-briefcase"></i>
-                            <p>Company</p>
+                            <p>4 - Company</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="?localization" class="nav-link <?php if (isset($_GET['localization'])) { echo "active"; } ?>">
+                            <i class="nav-icon fas fa-globe-americas"></i>
+                            <p>5 - Localization</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="?telemetry" class="nav-link <?php if (isset($_GET['telemetry'])) { echo "active"; } ?>">
                             <i class="nav-icon fas fa-share-alt"></i>
-                            <p>Telemetry</p>
+                            <p>6 - Telemetry</p>
                         </a>
                     </li>
                 </ul>
@@ -460,28 +541,319 @@ if (isset($_POST['add_telemetry'])) {
                     $_SESSION['alert_message'] = '';
                 }
                 ?>
-                <?php if (isset($_GET['setup_checks'])) { ?>
+                
+                <?php if (isset($_GET['checks'])) {
 
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <h6 class="mt-1"><i class="fas fa-fw fa-checkmark mr-2"></i>Setup Checks</h6>
-                        </div>
-                        <div class="card-body">
-                            <ul class="mb-4">
-                                <li>Upload is readable and writeable</li>
-                                <li>PHP 8.0+ Installed</li>
-                            </ul>
-                            <div style="text-align: center;"><a href="?database" class="btn btn-lg btn-primary text-bold mb-5">Install</a></div>
-                        </div>
-                    </div>
+                    $checks = [];
 
-                <?php } ?>
+                    // Section: PHP Extensions
+                    $phpExtensions = [];
+                    $extensions = [
+                        'php-mailparse' => 'mailparse',
+                        'php-imap' => 'imap',
+                        'php-mysqli' => 'mysqli',
+                        'php-intl' => 'intl',
+                        'php-curl' => 'curl',
+                        'php-mbstring' => 'mbstring',
+                        'php-gd' => 'gd',
+                    ];
 
-                <?php if (isset($_GET['database'])) { ?>
+                    foreach ($extensions as $name => $ext) {
+                        $loaded = extension_loaded($ext);
+                        $phpExtensions[] = [
+                            'name' => "$name installed",
+                            'passed' => $loaded,
+                            'value' => $loaded ? 'Installed' : 'Not Installed',
+                        ];
+                    }
+
+                    // Section: PHP Configuration
+                    $phpConfig = [];
+
+                    // Check if shell_exec is enabled
+                    $disabled_functions = explode(',', ini_get('disable_functions'));
+                    $disabled_functions = array_map('trim', $disabled_functions);
+                    $shell_exec_enabled = !in_array('shell_exec', $disabled_functions);
+
+                    $phpConfig[] = [
+                        'name' => 'shell_exec is enabled',
+                        'passed' => $shell_exec_enabled,
+                        'value' => $shell_exec_enabled ? 'Enabled' : 'Disabled',
+                    ];
+
+                    // Check upload_max_filesize and post_max_size >= 500M
+                    function return_bytes($val) {
+                        $val = trim($val);
+                        $unit = strtolower(substr($val, -1));
+                        $num = (float)$val;
+                        switch ($unit) {
+                            case 'g':
+                                $num *= 1024;
+                            case 'm':
+                                $num *= 1024;
+                            case 'k':
+                                $num *= 1024;
+                        }
+                        return $num;
+                    }
+
+                    $required_bytes = 500 * 1024 * 1024; // 500M in bytes
+
+                    $upload_max_filesize = ini_get('upload_max_filesize');
+                    $post_max_size = ini_get('post_max_size');
+
+                    $upload_passed = return_bytes($upload_max_filesize) >= $required_bytes;
+                    $post_passed = return_bytes($post_max_size) >= $required_bytes;
+
+                    $phpConfig[] = [
+                        'name' => 'upload_max_filesize >= 500M',
+                        'passed' => $upload_passed,
+                        'value' => $upload_max_filesize,
+                    ];
+
+                    $phpConfig[] = [
+                        'name' => 'post_max_size >= 500M',
+                        'passed' => $post_passed,
+                        'value' => $post_max_size,
+                    ];
+
+                    // Check PHP version >= 8.2.0
+                    $php_version = PHP_VERSION;
+                    $php_passed = version_compare($php_version, '8.2.0', '>=');
+
+                    $phpConfig[] = [
+                        'name' => 'PHP version >= 8.2.0',
+                        'passed' => $php_passed,
+                        'value' => $php_version,
+                    ];
+
+                    // Section: Shell Commands
+                    $shellCommands = [];
+
+                    if ($shell_exec_enabled) {
+                        $commands = ['whois', 'dig', 'git'];
+
+                        foreach ($commands as $command) {
+                            $which = trim(shell_exec("which $command 2>/dev/null"));
+                            $exists = !empty($which);
+                            $shellCommands[] = [
+                                'name' => "Command '$command' available",
+                                'passed' => $exists,
+                                'value' => $exists ? $which : 'Not Found',
+                            ];
+                        }
+                    } else {
+                        // If shell_exec is disabled, mark commands as unavailable
+                        foreach (['whois', 'dig', 'git'] as $command) {
+                            $shellCommands[] = [
+                                'name' => "Command '$command' available",
+                                'passed' => false,
+                                'value' => 'shell_exec Disabled',
+                            ];
+                        }
+                    }
+
+                    // Section: SSL Checks
+                    $sslChecks = [];
+
+                    // Check if accessing via HTTPS
+                    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443;
+                    $sslChecks[] = [
+                        'name' => 'Accessing via HTTPS',
+                        'passed' => $https,
+                        'value' => $https ? 'Yes' : 'No',
+                    ];
+
+                    // SSL Certificate Validity Check
+                    if ($https) {
+                        $streamContext = stream_context_create(["ssl" => ["capture_peer_cert" => true]]);
+                        $socket = @stream_socket_client("ssl://{$_SERVER['HTTP_HOST']}:443", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $streamContext);
+
+                        if ($socket) {
+                            $params = stream_context_get_params($socket);
+                            $cert = $params['options']['ssl']['peer_certificate'];
+                            $certInfo = openssl_x509_parse($cert);
+
+                            $validFrom = $certInfo['validFrom_time_t'];
+                            $validTo = $certInfo['validTo_time_t'];
+                            $currentTime = time();
+
+                            $certValid = ($currentTime >= $validFrom && $currentTime <= $validTo);
+
+                            $sslChecks[] = [
+                                'name' => 'SSL Certificate is valid',
+                                'passed' => $certValid,
+                                'value' => $certValid ? 'Valid' : 'Invalid or Expired',
+                            ];
+                        } else {
+                            $sslChecks[] = [
+                                'name' => 'SSL Certificate is valid',
+                                'passed' => false,
+                                'value' => 'Unable to retrieve certificate',
+                            ];
+                        }
+                    } else {
+                        $sslChecks[] = [
+                            'name' => 'SSL Certificate is valid',
+                            'passed' => false,
+                            'value' => 'Not using HTTPS',
+                        ];
+                    }
+
+                    // Section: Domain Checks
+                    $domainChecks = [];
+
+                    // Check if the site has a valid FQDN
+                    $fqdn = $_SERVER['HTTP_HOST'];
+                    $isValidFqdn = (bool) filter_var('http://' . $fqdn, FILTER_VALIDATE_URL) && preg_match('/^[a-z0-9.-]+\.[a-z]{2,}$/i', $fqdn);
+
+                    $domainChecks[] = [
+                        'name' => 'Site has a valid FQDN',
+                        'passed' => $isValidFqdn,
+                        'value' => $fqdn,
+                    ];
+
+                    // Section: File Permissions
+                    $filePermissions = [];
+
+                    // Check if web user has write access to webroot directory
+                    $webroot = $_SERVER['DOCUMENT_ROOT'];
+                    $writable = is_writable($webroot);
+                    $filePermissions[] = [
+                        'name' => 'Web user has write access to webroot directory',
+                        'passed' => $writable,
+                        'value' => $webroot,
+                    ];
+                    ?>
 
                     <div class="card card-dark">
                         <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-fw fa-database mr-2"></i>Connect your Database</h3>
+                            <h3 class="card-title"><i class="fas fa-fw fa-check mr-2"></i>Step 1 - Setup Checks</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-bordered">
+                                <tbody>
+                                    <!-- PHP Extensions Section -->
+                                    <tr class="bg-light">
+                                        <th colspan="3">PHP Extensions</th>
+                                    </tr>
+                                    <?php foreach ($phpExtensions as $check): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($check['name']); ?></td>
+                                            <td style="width: 50px; text-align: center;">
+                                                <?php if ($check['passed']): ?>
+                                                    <i class="fa fa-check" style="color:green"></i>
+                                                <?php else: ?>
+                                                    <i class="fa fa-times" style="color:red"></i>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($check['value']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+
+                                    <!-- PHP Configuration Section -->
+                                    <tr class="bg-light">
+                                        <th colspan="3">PHP Configuration</th>
+                                    </tr>
+                                    <?php foreach ($phpConfig as $check): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($check['name']); ?></td>
+                                            <td style="width: 50px; text-align: center;">
+                                                <?php if ($check['passed']): ?>
+                                                    <i class="fa fa-check" style="color:green"></i>
+                                                <?php else: ?>
+                                                    <i class="fa fa-times" style="color:red"></i>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($check['value']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+
+                                    <!-- Shell Commands Section -->
+                                    <tr class="bg-light">
+                                        <th colspan="3">Shell Commands</th>
+                                    </tr>
+                                    <?php foreach ($shellCommands as $check): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($check['name']); ?></td>
+                                            <td style="width: 50px; text-align: center;">
+                                                <?php if ($check['passed']): ?>
+                                                    <i class="fa fa-check" style="color:green"></i>
+                                                <?php else: ?>
+                                                    <i class="fa fa-times" style="color:red"></i>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($check['value']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+
+                                    <!-- SSL Checks Section -->
+                                    <tr class="bg-light">
+                                        <th colspan="3">SSL Checks</th>
+                                    </tr>
+                                    <?php foreach ($sslChecks as $check): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($check['name']); ?></td>
+                                            <td style="width: 50px; text-align: center;">
+                                                <?php if ($check['passed']): ?>
+                                                    <i class="fa fa-check" style="color:green"></i>
+                                                <?php else: ?>
+                                                    <i class="fa fa-times" style="color:red"></i>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($check['value']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+
+                                    <!-- Domain Checks Section -->
+                                    <tr class="bg-light">
+                                        <th colspan="3">Domain Checks</th>
+                                    </tr>
+                                    <?php foreach ($domainChecks as $check): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($check['name']); ?></td>
+                                            <td style="width: 50px; text-align: center;">
+                                                <?php if ($check['passed']): ?>
+                                                    <i class="fa fa-check" style="color:green"></i>
+                                                <?php else: ?>
+                                                    <i class="fa fa-times" style="color:red"></i>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($check['value']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+
+                                    <!-- File Permissions Section -->
+                                    <tr class="bg-light">
+                                        <th colspan="3">File Permissions</th>
+                                    </tr>
+                                    <?php foreach ($filePermissions as $check): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($check['name']); ?></td>
+                                            <td style="width: 50px; text-align: center;">
+                                                <?php if ($check['passed']): ?>
+                                                    <i class="fa fa-check" style="color:green"></i>
+                                                <?php else: ?>
+                                                    <i class="fa fa-times" style="color:red"></i>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($check['value']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            
+                            <hr>
+
+                            <a href="?database" class="btn btn-primary text-bold">Next (Database)<i class="fa fa-fw fa-arrow-circle-right ml-2"></i></a>
+                        </div>
+                    </div>
+
+                <?php } elseif (isset($_GET['database'])) { ?>
+
+                    <div class="card card-dark">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-fw fa-database mr-2"></i>Step 2 - Connect your Database</h3>
                         </div>
                         <div class="card-body">
                             <?php if (file_exists('config.php')) { ?>
@@ -498,7 +870,7 @@ if (isset($_POST['add_telemetry'])) {
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text"><i class="fa fa-fw fa-database"></i></span>
                                             </div>
-                                            <input type="text" class="form-control" name="database" placeholder="Database name" required>
+                                            <input type="text" class="form-control" name="database" placeholder="Database name" autofocus required>
                                         </div>
                                     </div>
 
@@ -521,7 +893,7 @@ if (isset($_POST['add_telemetry'])) {
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text"><i class="fa fa-fw fa-user"></i></span>
                                             </div>
-                                            <input type="text" class="form-control" name="username" placeholder="Database user account" autofocus required>
+                                            <input type="text" class="form-control" name="username" placeholder="Database user account" required>
                                         </div>
                                     </div>
 
@@ -540,7 +912,7 @@ if (isset($_POST['add_telemetry'])) {
 
                                     <hr>
                                     <button type="submit" name="add_database" class="btn btn-primary text-bold">
-                                        Next<i class="fas fa-fw fa-arrow-circle-right ml-2"></i>
+                                        Next (First User)<i class="fas fa-fw fa-arrow-circle-right ml-2"></i>
                                     </button>
                                 </form>
                             <?php } ?>
@@ -551,7 +923,7 @@ if (isset($_POST['add_telemetry'])) {
 
                     <div class="card card-dark">
                         <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-fw fa-user mr-2"></i>Create your first user</h3>
+                            <h3 class="card-title"><i class="fas fa-fw fa-user mr-2"></i>Step 3 - Create your first user</h3>
                         </div>
                         <div class="card-body">
 
@@ -596,7 +968,7 @@ if (isset($_POST['add_telemetry'])) {
 
                                 <hr>
 
-                                <button type="submit" name="add_user" class="btn btn-primary text-bold">Next <i class="fa fa-fw fa-arrow-circle-right"></i></button>
+                                <button type="submit" name="add_user" class="btn btn-primary text-bold">Next (Company details) <i class="fa fa-fw fa-arrow-circle-right"></i></button>
                             </form>
                         </div>
                     </div>
@@ -605,7 +977,7 @@ if (isset($_POST['add_telemetry'])) {
 
                     <div class="card card-dark">
                         <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-fw fa-briefcase mr-2"></i>Company Details</h3>
+                            <h3 class="card-title"><i class="fas fa-fw fa-briefcase mr-2"></i>Step 4 - Company Details</h3>
                         </div>
                         <div class="card-body">
                             <form method="post" enctype="multipart/form-data" autocomplete="off">
@@ -622,7 +994,7 @@ if (isset($_POST['add_telemetry'])) {
 
                                 <div class="form-group">
                                     <label>Logo</label>
-                                    <input type="file" class="form-control-file" name="file">
+                                    <input type="file" class="form-control-file" name="file" accept=".jpg, .jpeg, .png">
                                 </div>
 
                                 <div class="form-group">
@@ -710,7 +1082,24 @@ if (isset($_POST['add_telemetry'])) {
                                     </div>
                                 </div>
 
-                                <Legend>Localization</Legend>
+                                <hr>
+
+                                <button type="submit" name="add_company_settings" class="btn btn-primary text-bold">
+                                    Next (Localization)<i class="fas fa-fw fa-arrow-circle-right ml-2"></i>
+                                </button>
+
+                            </form>
+                        </div>
+                    </div>
+
+                <?php } elseif (isset($_GET['localization'])) { ?>
+
+                    <div class="card card-dark">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-fw fa-globe-americas mr-2"></i>Step 5 - Region and Language</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" autocomplete="off">
 
                                 <div class="form-group">
                                     <label>Language <strong class="text-danger">*</strong></label>
@@ -757,10 +1146,23 @@ if (isset($_POST['add_telemetry'])) {
                                     </div>
                                 </div>
 
+                                <div class="form-group">
+                                    <label>Phone Mask</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fa fa-phone"></i></span>
+                                        </div>
+                                        <select class="form-control select2" name="phone_mask">
+                                            <option value="1">US Format - e.g. (412) 888-9999</option>
+                                            <option value="0">Non-US Format - e.g. 4128889999</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <hr>
 
-                                <button type="submit" name="add_company_settings" class="btn btn-primary text-bold">
-                                    Next<i class="fas fa-fw fa-arrow-circle-right ml-2"></i>
+                                <button type="submit" name="add_localization_settings" class="btn btn-primary text-bold">
+                                    Next (Telemetry Settings)<i class="fas fa-fw fa-arrow-circle-right ml-2"></i>
                                 </button>
 
                             </form>
@@ -772,7 +1174,7 @@ if (isset($_POST['add_telemetry'])) {
 
                     <div class="card card-dark">
                         <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-fw fa-broadcast-tower mr-2"></i>Telemetry</h3>
+                            <h3 class="card-title"><i class="fas fa-fw fa-broadcast-tower mr-2"></i>Step 6 - Telemetry</h3>
                         </div>
                         <div class="card-body">
                             <form method="post" autocomplete="off">
@@ -798,7 +1200,7 @@ if (isset($_POST['add_telemetry'])) {
                                 <p>A few <a href="https://docs.itflow.org/installation#post-installation_essential_housekeeping">housekeeping steps</a> are required to ensure everything runs smoothly, namely:</p>
                                 <ul>
                                     <li><a href="https://docs.itflow.org/backups">Setup backups</a></li>
-                                    <li><a href="https://docs.itflow.org/cron">Setup cron</a></li>
+                                    <li><a href="https://docs.itflow.org/cron">Setup cron</a> *If Installing via script cron jobs will be automatically setup for you.</li>
                                     <li>Star ITFlow on <a href="https://github.com/itflow-org/itflow">Github</a> :)</li>
                                 </ul>
 
@@ -826,19 +1228,20 @@ if (isset($_POST['add_telemetry'])) {
                             <ul>
                                 <li>Please take a look over the install <a href="https://docs.itflow.org/installation">docs</a>, if you haven't already</li>
                                 <li>Don't hesitate to reach out on the <a href="https://forum.itflow.org/t/support" target="_blank">forums</a> if you need any assistance</li>
+                                <li><i>Apache/PHP Error log: <?php echo $errorLog ?></i></li>
                             </ul>
-                            <br><p>A database must be created before proceeding - click on the button below to get started</p>
+                            <br><p>A database must be created before proceeding - click on the button below to get started.</p>
                             <br><hr>
                             <p class="text-muted">ITFlow is <b>free software</b>: you can redistribute and/or modify it under the terms of the <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank">GNU General Public License</a>. <br> It is distributed in the hope that it will be useful, but <b>without any warranty</b>; without even the implied warranty of merchantability or fitness for a particular purpose.</p>
                             <?php
                             // Check that there is access to write to the current directory
                             if (!is_writable('.')) {
-                                echo "<div class='alert alert-danger'>Warning: The current directory is not writable. Ensure the webserver process has write access (chmod/chown). Check the <a href='https://docs.itflow.org/installation#ubuntu_setup_guide'>docs</a> for info.</div>";
+                                echo "<div class='alert alert-danger'>Warning: The current directory is not writable. Ensure the webserver process has write access (chmod/chown). Check the <a href='https://docs.itflow.org/installation'>docs</a> for info.</div>";
                             }
                             ?>
                             <hr>
                             <div style="text-align: center;">
-                                <a href="?database" class="btn btn-primary text-bold">
+                                <a href="?checks" class="btn btn-primary text-bold">
                                     Begin Setup<i class="fas fa-fw fa-arrow-alt-circle-right ml-2"></i>
                                 </a>
                             </div>
@@ -865,7 +1268,7 @@ if (isset($_POST['add_telemetry'])) {
 <script src='plugins/select2/js/select2.min.js'></script>
 <script src="plugins/Show-Hide-Passwords-Bootstrap-4/bootstrap-show-password.min.js"></script>
 <!-- AdminLTE App -->
-<script src="dist/js/adminlte.min.js"></script>
+<script src="plugins/adminlte/js/adminlte.min.js"></script>
 
 <!-- Custom js-->
 <script src="js/app.js"></script>

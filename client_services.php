@@ -4,8 +4,10 @@
 $sort = "service_name";
 $order = "ASC";
 
-require_once "inc_all_client.php";
+require_once "includes/inc_all_client.php";
 
+// Perms
+enforceUserPermission('module_support');
 
 //Rebuild URL
 $url_query_strings_sort = http_build_query($get_copy);
@@ -26,7 +28,9 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
         <div class="card-header py-2">
             <h3 class="card-title mt-2"><i class="fa fa-fw fa-stream mr-2"></i>Services</h3>
             <div class="card-tools">
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addServiceModal"><i class="fas fa-plus mr-2"></i>New Service</button>
+                <?php if (lookupUserPermission("module_support") >= 2) { ?>
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addServiceModal"><i class="fas fa-plus mr-2"></i>New Service</button>
+                <?php } ?>
             </div>
         </div>
 
@@ -34,10 +38,19 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
             <form autocomplete="off">
                 <input type="hidden" name="client_id" value="<?php echo $client_id; ?>">
-                <div class="input-group">
-                    <input type="search" class="form-control " name="q" value="<?php if (isset($q)) { echo stripslashes(nullable_htmlentities($q)); } ?>" placeholder="Search Services">
-                    <div class="input-group-append">
-                        <button class="btn btn-secondary"><i class="fa fa-search"></i></button>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="input-group mb-3 mb-md-0">
+                            <input type="search" class="form-control" name="q" value="<?php if (isset($q)) { echo stripslashes(nullable_htmlentities($q)); } ?>" placeholder="Search Services">
+                            <div class="input-group-append">
+                                <button class="btn btn-dark"><i class="fa fa-search"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="float-right">
+                        </div>
                     </div>
                 </div>
             </form>
@@ -49,8 +62,8 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <tr>
                         <th><a class="text-dark">Name</a></th>
                         <th><a class="text-dark">Category</a></th>
-                        <th><a class="text-dark">Updated</a></th>
                         <th><a class="text-dark">Importance</a></th>
+                        <th><a class="text-dark">Updated</a></th>
                         <th class="text-center">Action</th>
                     </tr>
                     </thead>
@@ -65,6 +78,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         $service_importance = nullable_htmlentities($row['service_importance']);
                         $service_backup = nullable_htmlentities($row['service_backup']);
                         $service_notes = nullable_htmlentities($row['service_notes']);
+                        $service_created_at = nullable_htmlentities($row['service_created_at']);
                         $service_updated_at = nullable_htmlentities($row['service_updated_at']);
                         $service_review_due = nullable_htmlentities($row['service_review_due']);
 
@@ -83,10 +97,21 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                         <tr>
                             <!-- Name/Category/Updated/Importance from DB -->
-                            <td class="text-bold"><a href="#" data-toggle="modal" data-target="#viewServiceModal<?php echo $service_id; ?>"> <?php echo $service_name ?></a></td>
+                            <td>
+                                <a class="text-dark" href="#" data-toggle="modal" data-target="#viewServiceModal<?php echo $service_id; ?>">
+                                    <div class="media">
+                                        <i class="fa fa-fw fa-2x fa-stream mr-3"></i>
+                                        <div class="media-body">
+                                            <div><?php echo $service_name; ?></div>
+                                            <div><small class="text-secondary"><?php echo $service_description; ?></small></div>
+                                        </div>
+                                    </div>
+                                </a>
+                        
+                            </td>
                             <td><?php echo $service_category ?></td>
-                            <td><?php echo $service_updated_at ?></td>
                             <td><?php echo $service_importance ?></td>
+                            <td><?php echo $service_updated_at ?></td>
 
                             <!-- Action -->
                             <td>
@@ -98,9 +123,9 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                         <a class="dropdown-item" href="#" data-toggle="modal" data-target="#editServiceModal<?php echo $service_id; ?>">
                                             <i class="fas fa-fw fa-edit mr-2"></i>Edit
                                         </a>
-                                        <?php if ($session_user_role == 3) { ?>
+                                        <?php if (lookupUserPermission("module_support") >= 3) { ?>
                                             <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item text-danger text-bold confirm-link" href="post.php?delete_service=<?php echo $service_id; ?>">
+                                            <a class="dropdown-item text-danger text-bold confirm-link" href="post.php?delete_service=<?php echo $service_id; ?>&csrf_token=<?php echo $_SESSION['csrf_token']; ?>">
                                                 <i class="fas fa-fw fa-trash mr-2"></i>Delete
                                             </a>
                                         <?php } ?>
@@ -116,8 +141,9 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             $mysqli,
                             "SELECT * FROM service_assets
                             LEFT JOIN assets ON service_assets.asset_id = assets.asset_id
+                            LEFT JOIN asset_interfaces ON interface_asset_id = assets.asset_id AND interface_primary = 1
                             LEFT JOIN logins ON service_assets.asset_id = logins.login_asset_id
-                            LEFT JOIN networks ON assets.asset_network_id = networks.network_id
+                            LEFT JOIN networks ON interface_network_id = networks.network_id
                             LEFT JOIN locations ON assets.asset_location_id = locations.location_id
                             WHERE service_id = $service_id"
                         );
@@ -173,9 +199,9 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             WHERE service_id = $service_id"
                         );
 
-                        require "client_service_edit_modal.php";
+                        require "modals/client_service_edit_modal.php";
 
-                        require "client_service_view_modal.php";
+                        require "modals/client_service_view_modal.php";
 
 
                     }
@@ -184,13 +210,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     </tbody>
                 </table>
             </div>
-            <?php require_once 'pagination.php';
+            <?php require_once "includes/filter_footer.php";
  ?>
         </div>
     </div>
 
 <?php
-require_once "client_service_add_modal.php";
+require_once "modals/client_service_add_modal.php";
 
-require_once "footer.php";
+require_once "includes/footer.php";
 

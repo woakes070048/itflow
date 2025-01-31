@@ -1,7 +1,13 @@
 <?php
 
-require_once "inc_all.php";
+require_once "includes/inc_all.php";
 
+// Initialize the HTML Purifier to prevent XSS
+require "plugins/htmlpurifier/HTMLPurifier.standalone.php";
+
+$purifier_config = HTMLPurifier_Config::createDefault();
+$purifier_config->set('URI.AllowedSchemes', ['data' => true, 'src' => true, 'http' => true, 'https' => true]);
+$purifier = new HTMLPurifier($purifier_config);
 
 if (isset($_GET['query'])) {
 
@@ -18,9 +24,10 @@ if (isset($_GET['query'])) {
         LEFT JOIN locations ON clients.client_id = locations.location_client_id AND location_primary = 1
         WHERE client_archived_at IS NULL
             AND client_name LIKE '%$query%'
+            $access_permission_query
         ORDER BY client_id DESC LIMIT 5"
     );
-    
+
     $sql_contacts = mysqli_query($mysqli, "SELECT * FROM contacts 
         LEFT JOIN clients ON client_id = contact_client_id
         WHERE contact_archived_at IS NULL
@@ -29,14 +36,16 @@ if (isset($_GET['query'])) {
             OR contact_email LIKE '%$query%'
             OR contact_phone LIKE '%$phone_query%'
             OR contact_mobile LIKE '%$phone_query%')
+            $access_permission_query
         ORDER BY contact_id DESC LIMIT 5"
     );
-    
+
     $sql_vendors = mysqli_query($mysqli, "SELECT * FROM vendors
         LEFT JOIN clients ON vendor_client_id = client_id
         WHERE vendor_archived_at IS NULL
             AND vendor_template = 0
             AND (vendor_name LIKE '%$query%' OR vendor_phone LIKE '%$phone_query%')
+            $access_permission_query
         ORDER BY vendor_id DESC LIMIT 5"
     );
 
@@ -44,35 +53,58 @@ if (isset($_GET['query'])) {
         LEFT JOIN clients ON domain_client_id = client_id
         WHERE domain_archived_at IS NULL
             AND domain_name LIKE '%$query%'
+            $access_permission_query
         ORDER BY domain_id DESC LIMIT 5"
     );
-    
+
     $sql_products = mysqli_query($mysqli, "SELECT * FROM products
         WHERE product_archived_at IS NULL
             AND product_name LIKE '%$query%'
         ORDER BY product_id DESC LIMIT 5"
     );
-    
+
     $sql_documents = mysqli_query($mysqli, "SELECT * FROM documents
         LEFT JOIN clients on document_client_id = clients.client_id
         WHERE document_archived_at IS NULL
             AND MATCH(document_content_raw) AGAINST ('$query')
+            $access_permission_query
         ORDER BY document_id DESC LIMIT 5"
     );
-    
+
+    $sql_files = mysqli_query($mysqli, "SELECT * FROM files
+        LEFT JOIN clients ON file_client_id = client_id
+        LEFT JOIN folders ON folder_id = file_folder_id
+        WHERE file_archived_at IS NULL
+            AND (file_name LIKE '%$query%'
+            OR file_description LIKE '%$query%')
+            $access_permission_query
+        ORDER BY file_id DESC LIMIT 5"
+    );
+
     $sql_tickets = mysqli_query($mysqli, "SELECT * FROM tickets
         LEFT JOIN clients on tickets.ticket_client_id = clients.client_id
+        LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
         WHERE ticket_archived_at IS NULL
             AND (ticket_subject LIKE '%$query%'
             OR ticket_number = '$ticket_num_query')
+            $access_permission_query
         ORDER BY ticket_id DESC LIMIT 5"
     );
-    
+
+    $sql_recurring_tickets = mysqli_query($mysqli, "SELECT * FROM scheduled_tickets
+        LEFT JOIN clients ON scheduled_ticket_client_id = client_id
+        WHERE scheduled_ticket_subject LIKE '%$query%'
+            OR scheduled_ticket_details LIKE '%$query%'
+            $access_permission_query
+        ORDER BY scheduled_ticket_id DESC LIMIT 5"
+    );
+
     $sql_logins = mysqli_query($mysqli, "SELECT * FROM logins
         LEFT JOIN contacts ON login_contact_id = contact_id
         LEFT JOIN clients ON login_client_id = client_id
         WHERE login_archived_at IS NULL
             AND (login_name LIKE '%$query%' OR login_description LIKE '%$query%')
+            $access_permission_query
         ORDER BY login_id DESC LIMIT 5"
     );
 
@@ -81,6 +113,7 @@ if (isset($_GET['query'])) {
         LEFT JOIN categories ON invoice_category_id = category_id
         WHERE invoice_archived_at IS NULL
             AND (CONCAT(invoice_prefix,invoice_number) LIKE '%$query%' OR invoice_scope LIKE '%$query%')
+            $access_permission_query
         ORDER BY invoice_number DESC LIMIT 5"
     );
 
@@ -88,18 +121,33 @@ if (isset($_GET['query'])) {
         LEFT JOIN contacts ON asset_contact_id = contact_id
         LEFT JOIN locations ON asset_location_id = location_id
         LEFT JOIN clients ON asset_client_id = client_id
+        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
         WHERE asset_archived_at IS NULL
-            AND (asset_name LIKE '%$query%' OR asset_description LIKE '%$query%')
+            AND (asset_name LIKE '%$query%' OR asset_description LIKE '%$query%' OR asset_type LIKE '%$query%' OR asset_make LIKE '%$query%' OR asset_model LIKE '%$query%' OR asset_serial LIKE '%$query%' OR asset_os LIKE '%$query%' OR interface_ip LIKE '%$query%' OR interface_nat_ip LIKE '%$query%' OR interface_mac LIKE '%$query%' OR asset_status LIKE '%$query%')
+            $access_permission_query
         ORDER BY asset_name DESC LIMIT 5"
     );
 
+    $sql_ticket_replies = mysqli_query($mysqli,"SELECT * FROM ticket_replies
+        LEFT JOIN tickets ON ticket_reply_ticket_id = ticket_id
+        LEFT JOIN clients ON ticket_client_id = client_id
+        WHERE ticket_reply_archived_at IS NULL
+            AND (ticket_reply LIKE '%$query%')
+            $access_permission_query
+        ORDER BY ticket_id DESC, ticket_reply_id ASC LIMIT 20"
+    );
+
     $q = nullable_htmlentities($_GET['query']);
-    
+
     ?>
 
-    <h4 class="text-center"><i class="fas fa-fw fa-search mr-2"></i>Search all things</h4>
-    <hr>
-    <div class="row">
+
+    <div class="col-sm-12">
+        <div class="card card-body mb-3">
+            <h4 class="text-center"><i class="fas fa-fw fa-search mr-2"></i>Global Search</h4>
+        </div>
+    </div>
+
 
         <?php if (mysqli_num_rows($sql_clients) > 0) { ?>
 
@@ -253,7 +301,7 @@ if (isset($_GET['query'])) {
             <div class="col-sm-6">
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h6 class="mt-1"><i class="fas fa-fw fa-box mr-2"></i>Domains</h6>
+                        <h6 class="mt-1"><i class="fas fa-fw fa-globe mr-2"></i>Domains</h6>
                     </div>
                     <div class="card-body">
                         <table class="table table-striped table-borderless">
@@ -261,7 +309,7 @@ if (isset($_GET['query'])) {
                             <tr>
                                 <th>Name</th>
                                 <th>Expiry</th>
-                                <th>>Client</th>
+                                <th>Client</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -273,7 +321,7 @@ if (isset($_GET['query'])) {
                                 $domain_id = intval($row['domain_id']);
                                 $client_id = intval($row['client_id']);
                                 $client_name = nullable_htmlentities($row['client_name']);
-                                
+
                                 ?>
                                 <tr>
                                     <td><a href="client_domains.php?client_id=<?php echo $client_id; ?>&domain_id=<?php echo $domain_id; ?>"><?php echo $domain_name; ?></a>
@@ -290,7 +338,7 @@ if (isset($_GET['query'])) {
             </div>
 
         <?php } ?>
-        
+
         <?php if (mysqli_num_rows($sql_products) > 0) { ?>
 
             <!-- Products -->
@@ -374,6 +422,56 @@ if (isset($_GET['query'])) {
 
         <?php } ?>
 
+        <?php if (mysqli_num_rows($sql_files) > 0) { ?>
+
+            <!-- Files -->
+            <div class="col-sm-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mt-1"><i class="fas fa-fw fa-paperclip mr-2"></i>Files</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped table-borderless">
+                            <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Description</th>
+                                <th>Client</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+
+                            while ($row = mysqli_fetch_array($sql_files)) {
+                                $file_id = intval($row['file_id']);
+                                $file_name = nullable_htmlentities($row['file_name']);
+                                $file_reference_name = nullable_htmlentities($row['file_reference_name']);
+                                $file_description = nullable_htmlentities($row['file_description']);
+                                $folder_id = intval($row['folder_id']);
+                                $folder_name = nullable_htmlentities($row['folder_name']);
+                                $client_id = intval($row['file_client_id']);
+                                $client_name = nullable_htmlentities($row['client_name']);
+
+                                ?>
+                                <tr>
+                                    <td><a href="uploads/clients/<?php echo $client_id; ?>/<?php echo $file_reference_name; ?>" download="<?php echo $file_name; ?>"><?php echo "$folder_name/$file_name"; ?></a></td>
+                                    <td><?php echo $file_description; ?></td>
+                                    <td>
+                                        <a href="client_files.php?client_id=<?php echo $client_id; ?>&folder_id=<?php echo $folder_id; ?>"><?php echo $client_name; ?></a>
+                                    </td>
+                                </tr>
+
+                            <?php } ?>
+
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        <?php } ?>
+
         <?php if (mysqli_num_rows($sql_tickets) > 0) { ?>
 
             <!-- Tickets -->
@@ -400,7 +498,7 @@ if (isset($_GET['query'])) {
                                 $ticket_prefix = nullable_htmlentities($row['ticket_prefix']);
                                 $ticket_number = intval($row['ticket_number']);
                                 $ticket_subject = nullable_htmlentities($row['ticket_subject']);
-                                $ticket_status = nullable_htmlentities($row['ticket_status']);
+                                $ticket_status_name = nullable_htmlentities($row['ticket_status_name']);
                                 $client_name = nullable_htmlentities($row['client_name']);
                                 $client_id = intval($row['ticket_client_id']);
 
@@ -408,7 +506,7 @@ if (isset($_GET['query'])) {
                                 <tr>
                                     <td><a href="ticket.php?ticket_id=<?php echo $ticket_id ?>"><?php echo $ticket_prefix . $ticket_number; ?></a></td>
                                     <td><?php echo $ticket_subject; ?></td>
-                                    <td><?php echo $ticket_status; ?></td>
+                                    <td><?php echo $ticket_status_name; ?></td>
                                     <td><a href="client_tickets.php?client_id=<?php echo $client_id ?>"><?php echo $client_name; ?></a></td>
                                 </tr>
 
@@ -423,13 +521,63 @@ if (isset($_GET['query'])) {
 
         <?php } ?>
 
+
+        <?php if (mysqli_num_rows($sql_recurring_tickets) > 0) { ?>
+
+            <!-- Recurring Tickets -->
+            <div class="col-sm-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mt-1"><i class="fas fa-fw fa-undo-alt mr-2"></i>Recurring Tickets</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped table-borderless">
+                            <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Frequency</th>
+                                <th>Next</th>
+                                <th>Client</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+
+                            while ($row = mysqli_fetch_array($sql_recurring_tickets)) {
+                                $scheduled_ticket_id = intval($row['scheduled_ticket_id']);
+                                $scheduled_ticket_subject = nullable_htmlentities($row['scheduled_ticket_subject']);
+                                $scheduled_ticket_frequency = nullable_htmlentities($row['scheduled_ticket_frequency']);
+                                $scheduled_ticket_next_run = nullable_htmlentities($row['scheduled_ticket_next_run']);
+                                $client_name = nullable_htmlentities($row['client_name']);
+                                $client_id = intval($row['client_id']);
+
+                                ?>
+                                <tr>
+                                    <td><a href="recurring_tickets.php"><?php echo $scheduled_ticket_subject; ?></a></td>
+                                    <td><?php echo $scheduled_ticket_frequency; ?></td>
+                                    <td><?php echo $scheduled_ticket_next_run; ?></td>
+                                    <td><a href="client_recurring_tickets.php?client_id=<?php echo $client_id ?>"><?php echo $client_name; ?></a></td>
+                                </tr>
+
+                            <?php } ?>
+
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        <?php } ?>
+
+
         <?php if (mysqli_num_rows($sql_logins) > 0) { ?>
 
             <!-- Logins -->
             <div class="col-sm-6">
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h6 class="mt-1"><i class="fas fa-fw fa-key mr-2"></i>Passwords</h6>
+                        <h6 class="mt-1"><i class="fas fa-fw fa-key mr-2"></i>Credentials</h6>
                     </div>
                     <div class="card-body">
                         <table class="table table-striped table-borderless">
@@ -580,7 +728,7 @@ if (isset($_GET['query'])) {
                                 if (empty($contact_name)) {
                                     $contact_name_display = "-";
                                 }else{
-                                    $contact_name_display = "<a href='client_contact_details.php?client_id=$client_id&contact_id=$contact_id'>$contact_name</a>"; 
+                                    $contact_name_display = "<a href='client_contact_details.php?client_id=$client_id&contact_id=$contact_id'>$contact_name</a>";
                                 }
                                 $contact_archived_at = nullable_htmlentities($row['contact_archived_at']);
                                 if (empty($contact_archived_at)) {
@@ -617,11 +765,90 @@ if (isset($_GET['query'])) {
 
         <?php } ?>
 
+        <?php if (mysqli_num_rows($sql_ticket_replies) > 0) { ?>
+
+            <!-- Ticket Replies -->
+
+            <div class="col-sm-6">
+
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mt-1"><i class="fas fa-fw fa-reply mr-2"></i>Ticket Replies</h6>
+                    </div>
+                    <div class="card-body">
+
+                    <?php
+                    $last_ticket_id = null; // Track the last ticket ID processed
+
+                    while ($row = mysqli_fetch_array($sql_ticket_replies)) {
+                        $ticket_id = intval($row['ticket_id']);
+
+                        // Only output the ticket header if we're at a new ticket
+                        if ($ticket_id !== $last_ticket_id) {
+                            if ($last_ticket_id !== null) {
+                                // Close the previous ticket's card (except for the very first ticket)
+                                echo '</div></div>';
+                            }
+
+                            $ticket_prefix = nullable_htmlentities($row['ticket_prefix']);
+                            $ticket_number = intval($row['ticket_number']);
+                            $ticket_subject = nullable_htmlentities($row['ticket_subject']);
+                            $client_id = intval($row['ticket_client_id']);
+                            $client_name = nullable_htmlentities($row['client_name']);
+
+                            // Output the ticket header
+                            ?>
+                            <div class="card card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <?php echo "$client_name - $ticket_prefix$ticket_number - $ticket_subject"; ?>
+                                    </h3>
+                                    <div class="card-tools">
+                                        <a href="ticket.php?ticket_id=<?php echo $ticket_id; ?>" target="_blank">Open <i class="fa fa-fw fa-external-link-alt"></i></a>
+                                    </div>
+                                </div>
+                                <div class="card-body prettyContent">
+                            <?php
+                        }
+
+                        $ticket_reply = $purifier->purify($row['ticket_reply']);
+
+                        // Output the ticket reply
+                        ?>
+                        <div class="media">
+                            <i class="fas fa-fw fa-reply mr-3"></i>
+                            <div class="media-body">
+                                <?php echo $ticket_reply; ?>
+                            </div>
+                        </div>
+                        <hr>
+                        <?php
+
+                        $last_ticket_id = $ticket_id; // Update the last ticket ID
+                    }
+
+                    if ($last_ticket_id !== null) {
+                        // Close the last ticket's card
+                        echo '</div></div>';
+                    }
+                    ?>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        <?php } ?>
+
     </div>
 
-
-<?php } ?>
-
 <?php
-require_once "footer.php";
 
+}
+
+require_once "includes/footer.php";
+
+?>
+
+<script src="js/pretty_content.js"></script>

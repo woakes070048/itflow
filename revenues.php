@@ -4,8 +4,10 @@
 $sort = "revenue_date";
 $order = "DESC";
 
-require_once "inc_all.php";
+require_once "includes/inc_all.php";
 
+// Perms
+enforceUserPermission('module_financial');
 
 //Rebuild URL
 $url_query_strings_sort = http_build_query($get_copy);
@@ -49,7 +51,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <div class="col-md-2">
                         <div class="form-group">
                             <label>Canned Date</label>
-                            <select class="form-control select2" name="canned_date">
+                            <select onchange="this.form.submit()" class="form-control select2" name="canned_date">
                                 <option <?php if ($_GET['canned_date'] == "custom") { echo "selected"; } ?> value="custom">Custom</option>
                                 <option <?php if ($_GET['canned_date'] == "today") { echo "selected"; } ?> value="today">Today</option>
                                 <option <?php if ($_GET['canned_date'] == "yesterday") { echo "selected"; } ?> value="yesterday">Yesterday</option>
@@ -65,13 +67,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <div class="col-md-2">
                         <div class="form-group">
                             <label>Date From</label>
-                            <input type="date" class="form-control" name="dtf" max="2999-12-31" value="<?php echo nullable_htmlentities($dtf); ?>">
+                            <input onchange="this.form.submit()" type="date" class="form-control" name="dtf" max="2999-12-31" value="<?php echo nullable_htmlentities($dtf); ?>">
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
                             <label>Date To</label>
-                            <input type="date" class="form-control" name="dtt" max="2999-12-31" value="<?php echo nullable_htmlentities($dtt); ?>">
+                            <input onchange="this.form.submit()" type="date" class="form-control" name="dtt" max="2999-12-31" value="<?php echo nullable_htmlentities($dtt); ?>">
                         </div>
                     </div>
                 </div>
@@ -82,12 +84,36 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
             <table class="table table-striped table-borderless table-hover">
                 <thead class="<?php if ($num_rows[0] == 0) { echo "d-none"; } ?>">
                 <tr>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_date&order=<?php echo $disp; ?>">Date</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=category_name&order=<?php echo $disp; ?>">Category</a></th>
-                    <th class="text-right"><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_amount&order=<?php echo $disp; ?>">Amount</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_payment_method&order=<?php echo $disp; ?>">Method</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_reference&order=<?php echo $disp; ?>">Reference</a></th>
-                    <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=account_name&order=<?php echo $disp; ?>">Account</a></th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_date&order=<?php echo $disp; ?>">
+                            Date <?php if ($sort == 'revenue_date') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=category_name&order=<?php echo $disp; ?>">
+                            Category <?php if ($sort == 'category_name') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th class="text-right">
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_amount&order=<?php echo $disp; ?>">
+                            Amount <?php if ($sort == 'revenue_amount') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_payment_method&order=<?php echo $disp; ?>">
+                            Method <?php if ($sort == 'revenue_payment_method') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=revenue_reference&order=<?php echo $disp; ?>">
+                            Reference <?php if ($sort == 'revenue_reference') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=account_name&order=<?php echo $disp; ?>">
+                            Account <?php if ($sort == 'account_name') { echo $order_icon; } ?>
+                        </a>
+                    </th>
                     <th class="text-center">Action</th>
                 </tr>
                 </thead>
@@ -139,7 +165,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             </div>
                             <?php
 
-                            require "revenue_edit_modal.php";
+                            require "modals/revenue_edit_modal.php";
 
 
                             ?>
@@ -152,19 +178,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 </tbody>
             </table>
         </div>
-        <?php require_once "pagination.php";
+        <?php require_once "includes/filter_footer.php";
  ?>
     </div>
 </div>
 
 <?php
 
-require_once "revenue_add_modal.php";
+require_once "modals/revenue_add_modal.php";
 
-require_once "category_quick_add_modal.php";
-
-
-require_once "footer.php";
-
-
-?>
+require_once "includes/footer.php";

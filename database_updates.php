@@ -17,210 +17,6 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
 
     // We need updates!
 
-    if (CURRENT_DATABASE_VERSION == '0.0.1') {
-        // Insert queries here required to update to DB version 0.0.2
-
-        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_module_enable_itdoc` TINYINT(1) DEFAULT 1 AFTER `config_backup_path`");
-        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_module_enable_ticketing` TINYINT(1) DEFAULT 1 AFTER `config_module_enable_itdoc`");
-        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_module_enable_accounting` TINYINT(1) DEFAULT 1 AFTER `config_module_enable_ticketing`");
-
-        // Update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.0.2'");
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.2') {
-        // Insert queries here required to update to DB version 0.0.3
-
-        // Add document content raw column & index
-        mysqli_query($mysqli, "ALTER TABLE `documents` ADD `document_content_raw` LONGTEXT NOT NULL AFTER `document_content`, ADD FULLTEXT `document_content_raw` (`document_content_raw`)");
-
-        // Populate content raw column with existing document data
-        $documents_sql = mysqli_query($mysqli, "SELECT * FROM `documents`");
-        while($row = mysqli_fetch_array($documents_sql)) {
-            $id = $row['document_id'];
-            $name = $row['document_name'];
-            $content = $row['document_content'];
-            $content_raw = trim(mysqli_real_escape_string($mysqli, strip_tags($name . " " . str_replace("<", " <", $content))));
-
-            mysqli_query($mysqli, "UPDATE `documents` SET `document_content_raw` = '$content_raw' WHERE `document_id` = '$id'");
-        }
-
-        // Add API key client column
-        mysqli_query($mysqli, "ALTER TABLE `api_keys` ADD `api_key_client_id` INT NOT NULL DEFAULT '0' AFTER `api_key_expire`");
-
-        // Then, update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.0.3'");
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.3') {
-        // Insert queries here required to update to DB version 0.0.4
-        // mysqli_query($mysqli, "ALTER TABLE .....");
-
-        // Update all tables updated/modified fields to be automatic
-
-        mysqli_query($mysqli, "ALTER TABLE `accounts` CHANGE `account_created_at` `account_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `account_updated_at` `account_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL;");
-
-        mysqli_query($mysqli, "ALTER TABLE `api_keys` CHANGE `api_key_created_at` `api_key_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `assets` CHANGE `asset_created_at` `asset_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `asset_updated_at` `asset_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL;");
-
-        mysqli_query($mysqli, "ALTER TABLE `calendars` CHANGE `calendar_created_at` `calendar_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `calendar_updated_at` `calendar_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `campaigns` CHANGE `campaign_created_at` `campaign_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `campaign_updated_at` `campaign_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `campaign_messages` CHANGE `message_created_at` `message_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `message_updated_at` `message_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `categories` CHANGE `category_created_at` `category_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `category_updated_at` `category_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `certificates` CHANGE `certificate_created_at` `certificate_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `certificate_updated_at` `certificate_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `clients` CHANGE `client_created_at` `client_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `client_updated_at` `client_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `companies` CHANGE `company_created_at` `company_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `company_updated_at` `company_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `contacts` CHANGE `contact_created_at` `contact_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `contact_updated_at` `contact_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `contracts` CHANGE `contract_created_at` `contract_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `contract_updated_at` `contract_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `custom_links` CHANGE `custom_link_created_at` `custom_link_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `departments` CHANGE `department_created_at` `department_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `department_updated_at` `department_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `documents` CHANGE `document_created_at` `document_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `document_updated_at` `document_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `domains` CHANGE `domain_created_at` `domain_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `domain_updated_at` `domain_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `events` CHANGE `event_created_at` `event_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `event_updated_at` `event_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `expenses` CHANGE `expense_created_at` `expense_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `expense_updated_at` `expense_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `files` CHANGE `file_created_at` `file_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `file_updated_at` `file_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL;");
-
-        mysqli_query($mysqli, "ALTER TABLE `history` CHANGE `history_created_at` `history_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `invoices` CHANGE `invoice_created_at` `invoice_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `invoice_updated_at` `invoice_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `invoice_items` CHANGE `item_created_at` `item_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `item_updated_at` `item_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `locations` CHANGE `location_created_at` `location_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `location_updated_at` `location_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `logins` CHANGE `login_created_at` `login_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `login_updated_at` `login_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `logs` CHANGE `log_created_at` `log_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `networks` CHANGE `network_created_at` `network_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `network_updated_at` `network_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `notifications` CHANGE `notification_timestamp` `notification_timestamp` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `payments` CHANGE `payment_created_at` `payment_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `payment_updated_at` `payment_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `products` CHANGE `product_created_at` `product_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `product_updated_at` `product_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `quotes` CHANGE `quote_created_at` `quote_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `quote_updated_at` `quote_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `records` CHANGE `record_created_at` `record_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `record_updated_at` `record_updated_at` DATETIME on update CURRENT_TIMESTAMP NOT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `recurring` CHANGE `recurring_created_at` `recurring_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `recurring_updated_at` `recurring_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `scheduled_tickets` CHANGE `scheduled_ticket_created_at` `scheduled_ticket_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `scheduled_ticket_updated_at` `scheduled_ticket_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `services` CHANGE `service_created_at` `service_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `service_updated_at` `service_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `shared_items` CHANGE `item_created_at` `item_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `software` CHANGE `software_created_at` `software_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `software_updated_at` `software_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `tags` CHANGE `tag_created_at` `tag_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `tag_updated_at` `tag_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `taxes` CHANGE `tax_created_at` `tax_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `tax_updated_at` `tax_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `tickets` CHANGE `ticket_created_at` `ticket_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `ticket_updated_at` `ticket_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `ticket_replies` CHANGE `ticket_reply_created_at` `ticket_reply_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `ticket_reply_updated_at` `ticket_reply_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `transfers` CHANGE `transfer_created_at` `transfer_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `transfer_updated_at` `transfer_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `trips` CHANGE `trip_created_at` `trip_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `trip_updated_at` `trip_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `users` CHANGE `user_created_at` `user_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `user_updated_at` `user_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        mysqli_query($mysqli, "ALTER TABLE `vendors` CHANGE `vendor_created_at` `vendor_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `vendor_updated_at` `vendor_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        // Then, update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE settings SET config_current_database_version = '0.0.4'");
-
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.4') {
-        // Queries here required to update to DB version 0.0.5
-
-        mysqli_query($mysqli, "ALTER TABLE `assets` DROP `asset_meshcentral_id`;");
-        mysqli_query($mysqli, "ALTER TABLE `clients` DROP `client_meshcentral_group`;");
-        mysqli_query($mysqli, "ALTER TABLE `settings` DROP `config_meshcentral_uri`, DROP `config_meshcentral_user`, DROP `config_meshcentral_secret`;");
-
-        // Then, update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.0.5'");
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.5') {
-        // Insert queries here required to update to DB version 0.0.6
-
-        mysqli_query($mysqli, "UPDATE documents SET document_folder_id = 0");
-
-        mysqli_query($mysqli, "DROP TABLE documents_tagged");
-        mysqli_query($mysqli, "DROP TABLE document_tags");
-
-
-        // Then, update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE settings SET config_current_database_version = '0.0.6'");
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.6') {
-        // Insert queries here required to update to DB version 0.0.7
-        mysqli_query($mysqli, "ALTER TABLE contacts ADD contact_department VARCHAR(200) NULL AFTER contact_title");
-        mysqli_query($mysqli, "DROP TABLE departments");
-        mysqli_query($mysqli, "ALTER TABLE contacts DROP contact_department_id");
-
-        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.0.7'");
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.7') {
-        // Insert queries here required to update to DB version 0.0.8
-
-        // Add contact_department column to tables without it (fresh installs) - this will cause an error if it already exists so catch and discard it
-        try{
-            mysqli_query($mysqli, "ALTER TABLE contacts ADD contact_department VARCHAR(200) NULL AFTER contact_title");
-        } catch(Exception $e) {
-            // Nothing
-        }
-
-        // Then, update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.0.8'");
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.8') {
-        // Insert queries here required to update to DB version 0.0.9
-
-        mysqli_query($mysqli, "ALTER TABLE `revenues` CHANGE `revenue_created_at` `revenue_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CHANGE `revenue_updated_at` `revenue_updated_at` DATETIME on update CURRENT_TIMESTAMP NULL DEFAULT NULL; ");
-
-        // Then, update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.0.9'");
-    }
-
-    if (CURRENT_DATABASE_VERSION == '0.0.9') {
-        // Insert queries here required to update to DB version 0.0.9
-        // Remove unused tables
-        mysqli_query($mysqli, "DROP TABLE contracts");
-        mysqli_query($mysqli, "DROP TABLE messages");
-        mysqli_query($mysqli, "DROP TABLE roles");
-
-        //Remove updated at as API keys can only be added or revoked
-        mysqli_query($mysqli, "ALTER TABLE `api_keys` DROP `api_key_updated_at`");
-
-        // Then, update the database to the next sequential version
-        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.1.0'");
-    }
-
     if (CURRENT_DATABASE_VERSION == '0.1.0') {
         // Insert queries here required to update to DB version 0.1.1
         // Logs don't get archived
@@ -335,35 +131,35 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
     if (CURRENT_DATABASE_VERSION == '0.2.0') {
         //Insert queries here required to update to DB version 0.2.1
 
-        mysqli_query($mysqli, "ALTER TABLE `vendors` 
-	  ADD `vendor_hours` VARCHAR(200) NULL DEFAULT NULL AFTER `vendor_website`,
-	  ADD `vendor_sla` VARCHAR(200) NULL DEFAULT NULL AFTER `vendor_hours`,
-	  ADD `vendor_code` VARCHAR(200) NULL DEFAULT NULL AFTER `vendor_sla`,
-	  ADD `vendor_template_id` INT(11) DEFAULT 0 AFTER `vendor_archived_at`
-	");
+        mysqli_query($mysqli, "ALTER TABLE `vendors`
+        ADD `vendor_hours` VARCHAR(200) NULL DEFAULT NULL AFTER `vendor_website`,
+        ADD `vendor_sla` VARCHAR(200) NULL DEFAULT NULL AFTER `vendor_hours`,
+        ADD `vendor_code` VARCHAR(200) NULL DEFAULT NULL AFTER `vendor_sla`,
+        ADD `vendor_template_id` INT(11) DEFAULT 0 AFTER `vendor_archived_at`
+        ");
 
         mysqli_query($mysqli, "ALTER TABLE `vendors`
-	  DROP `vendor_country`, 
-	  DROP `vendor_address`, 
-	  DROP `vendor_city`, 
-	  DROP `vendor_state`, 
-	  DROP `vendor_zip`, 
-	  DROP `vendor_global`
-	");
+        DROP `vendor_country`,
+        DROP `vendor_address`,
+        DROP `vendor_city`,
+        DROP `vendor_state`,
+        DROP `vendor_zip`,
+        DROP `vendor_global`
+        ");
 
         //Create New Vendor Templates Table
         mysqli_query($mysqli, "CREATE TABLE `vendor_templates` (`vendor_template_id` int(11) AUTO_INCREMENT PRIMARY KEY,
-	  `vendor_template_name` varchar(200) NOT NULL,
-	  `vendor_template_description` varchar(200) NULL DEFAULT NULL,
-	  `vendor_template_phone` varchar(200) NULL DEFAULT NULL, 
-	  `vendor_template_email` varchar(200) NULL DEFAULT NULL,
-	  `vendor_template_website` varchar(200) NULL DEFAULT NULL,
-	  `vendor_template_hours` varchar(200) NULL DEFAULT NULL,
-	  `vendor_template_created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-	  `vendor_template_updated_at` datetime NULL ON UPDATE CURRENT_TIMESTAMP,
-	  `vendor_template_archived_at` datetime NULL DEFAULT NULL,
-	  `company_id` int(11) NOT NULL
-	)");
+        `vendor_template_name` varchar(200) NOT NULL,
+        `vendor_template_description` varchar(200) NULL DEFAULT NULL,
+        `vendor_template_phone` varchar(200) NULL DEFAULT NULL,
+        `vendor_template_email` varchar(200) NULL DEFAULT NULL,
+        `vendor_template_website` varchar(200) NULL DEFAULT NULL,
+        `vendor_template_hours` varchar(200) NULL DEFAULT NULL,
+        `vendor_template_created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        `vendor_template_updated_at` datetime NULL ON UPDATE CURRENT_TIMESTAMP,
+        `vendor_template_archived_at` datetime NULL DEFAULT NULL,
+        `company_id` int(11) NOT NULL
+        )");
 
         //Then, update the database to the next sequential version
         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.2.1'");
@@ -393,21 +189,20 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
     }
 
     if (CURRENT_DATABASE_VERSION == '0.2.3') {
-
         //Create New interfaces Table
         mysqli_query($mysqli, "CREATE TABLE `interfaces` (`interface_id` int(11) AUTO_INCREMENT PRIMARY KEY,
-	`interface_number` int(11) NULL DEFAULT NULL,
-	`interface_description` varchar(200) NULL DEFAULT NULL,
-	`interface_connected_asset` varchar(200) NULL DEFAULT NULL, 
-	`interface_ip` varchar(200) NULL DEFAULT NULL,
-	`interface_created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-	`interface_updated_at` datetime NULL ON UPDATE CURRENT_TIMESTAMP,
-	`interface_archived_at` datetime NULL DEFAULT NULL,
-	`interface_connected_asset_id` int(11) NOT NULL DEFAULT 0,
-	`interface_network_id` int(11) NOT NULL DEFAULT 0,
-	`interface_asset_id` int(11) NOT NULL,
-	`company_id` int(11) NOT NULL
-  )");
+        `interface_number` int(11) NULL DEFAULT NULL,
+        `interface_description` varchar(200) NULL DEFAULT NULL,
+        `interface_connected_asset` varchar(200) NULL DEFAULT NULL,
+        `interface_ip` varchar(200) NULL DEFAULT NULL,
+        `interface_created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        `interface_updated_at` datetime NULL ON UPDATE CURRENT_TIMESTAMP,
+        `interface_archived_at` datetime NULL DEFAULT NULL,
+        `interface_connected_asset_id` int(11) NOT NULL DEFAULT 0,
+        `interface_network_id` int(11) NOT NULL DEFAULT 0,
+        `interface_asset_id` int(11) NOT NULL,
+        `company_id` int(11) NOT NULL
+        )");
 
         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.2.4'");
 
@@ -1372,12 +1167,12 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
     }
 
     if (CURRENT_DATABASE_VERSION == '0.8.6') {
-    // Insert queries here required to update to DB version 0.8.7
-    mysqli_query($mysqli, "ALTER TABLE `accounts` ADD `account_type` int(6) DEFAULT NULL AFTER `account_notes`");
-    mysqli_query($mysqli, "CREATE TABLE `account_types` (`account_type_id` int(11) NOT NULL AUTO_INCREMENT,`account_type_name` varchar(255) NOT NULL,`account_type_description` text DEFAULT NULL,`account_type_created_at` datetime NOT NULL DEFAULT current_timestamp(),`account_type_updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),`account_type_archived_at` datetime DEFAULT NULL,PRIMARY KEY (`account_type_id`))");
+        // Insert queries here required to update to DB version 0.8.7
+        mysqli_query($mysqli, "ALTER TABLE `accounts` ADD `account_type` int(6) DEFAULT NULL AFTER `account_notes`");
+        mysqli_query($mysqli, "CREATE TABLE `account_types` (`account_type_id` int(11) NOT NULL AUTO_INCREMENT,`account_type_name` varchar(255) NOT NULL,`account_type_description` text DEFAULT NULL,`account_type_created_at` datetime NOT NULL DEFAULT current_timestamp(),`account_type_updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),`account_type_archived_at` datetime DEFAULT NULL,PRIMARY KEY (`account_type_id`))");
 
-    // Then, update the database to the next sequential version
-    mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.8.7'");
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.8.7'");
     }
 
     if (CURRENT_DATABASE_VERSION == '0.8.7') {
@@ -1398,29 +1193,28 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
 
 
     if (CURRENT_DATABASE_VERSION == '0.8.8') {
-    // Insert queries here required to update to DB version 0.8.9
-    mysqli_query($mysqli, "ALTER TABLE `invoice_items` ADD `item_order` INT(11) NOT NULL DEFAULT 0 AFTER `item_total`");
-    // Update existing invoices so that item_order is set to item_id
-    $sql_invoices = mysqli_query($mysqli, "SELECT invoice_id FROM invoices WHERE invoice_id IS NOT NULL");
-    foreach ($sql_invoices as $row) {
-        $invoice_id = $row['invoice_id'];
-        $sql_invoice_items = mysqli_query($mysqli, "SELECT item_id FROM invoice_items WHERE item_invoice_id = '$invoice_id' ORDER BY item_id ASC");
-        $item_order = 1;
-        foreach ($sql_invoice_items as $row) {
-            $item_id = $row['item_id'];
-            mysqli_query($mysqli, "UPDATE invoice_items SET item_order = '$item_order' WHERE item_id = '$item_id'");
-            $item_order++;
-            //Log changes made to invoice
-            mysqli_query($mysqli,"INSERT INTO logs SET log_type = 'Invoice', log_action = 'Modify', log_description = 'Updated item_order to item_id: $item_order'");
+        // Insert queries here required to update to DB version 0.8.9
+        mysqli_query($mysqli, "ALTER TABLE `invoice_items` ADD `item_order` INT(11) NOT NULL DEFAULT 0 AFTER `item_total`");
+        // Update existing invoices so that item_order is set to item_id
+        $sql_invoices = mysqli_query($mysqli, "SELECT invoice_id FROM invoices WHERE invoice_id IS NOT NULL");
+        foreach ($sql_invoices as $row) {
+            $invoice_id = $row['invoice_id'];
+            $sql_invoice_items = mysqli_query($mysqli, "SELECT item_id FROM invoice_items WHERE item_invoice_id = '$invoice_id' ORDER BY item_id ASC");
+            $item_order = 1;
+            foreach ($sql_invoice_items as $row) {
+                $item_id = $row['item_id'];
+                mysqli_query($mysqli, "UPDATE invoice_items SET item_order = '$item_order' WHERE item_id = '$item_id'");
+                $item_order++;
+                //Log changes made to invoice
+                mysqli_query($mysqli,"INSERT INTO logs SET log_type = 'Invoice', log_action = 'Modify', log_description = 'Updated item_order to item_id: $item_order'");
 
+            }
         }
-    }
 
-    //
-    // Then, update the database to the next sequential version
-    mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.8.9'");
+        //
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.8.9'");
     }
-    //
 
 
     if (CURRENT_DATABASE_VERSION == '0.8.9') {
@@ -1454,17 +1248,14 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
                 mysqli_query($mysqli,"INSERT INTO logs SET log_type = 'Recurring', log_action = 'Modify', log_description = 'Updated item_order to item_id: $item_order'");
             }
         }
-        
+
 
         //
         // Then, update the database to the next sequential version
         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.0'");
     }
 
-    // Be sure to change database_version.php to reflect the version you are updating to here
-    // Please add this same comment block to the bottom of this file, and update the version number.
-    // Uncomment Below Lines, to add additional database updates
-    //
+
     if (CURRENT_DATABASE_VERSION == '0.9.0') {
         //add leads column to clients table
         mysqli_query($mysqli, "ALTER TABLE `clients` ADD `client_lead` TINYINT(1) NOT NULL DEFAULT 0 AFTER `client_id`");
@@ -1491,12 +1282,1200 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
 
     }
 
-    //if (CURRENT_DATABASE_VERSION == '0.9.1') {
-        // Insert queries here required to update to DB version 0.9.0
+    if (CURRENT_DATABASE_VERSION == '0.9.3') {
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_default_hourly_rate` DECIMAL(15,2) NOT NULL DEFAULT 0.00 AFTER `config_default_net_terms`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.4'");
+
+    }
+
+    if (CURRENT_DATABASE_VERSION == '0.9.4') {
+        // Insert queries here required to update to DB version 0.9.5
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_stripe_client_pays_fees` TINYINT(1) NOT NULL DEFAULT 0 AFTER `config_stripe_account`");
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '0.9.5') {
+        mysqli_query($mysqli, "ALTER TABLE `user_settings` ADD `user_config_remember_me_token` VARCHAR(255) NULL DEFAULT NULL AFTER `user_role`");
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '0.9.6') {
+        // Insert queries here required to update to DB version 0.9.7
+        mysqli_query($mysqli, "ALTER TABLE `tickets` ADD `ticket_invoice_id` INT(11) NOT NULL DEFAULT 0 AFTER `ticket_asset_id`");
+        mysqli_query($mysqli, "ALTER TABLE `tickets` ADD `ticket_billable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `ticket_status`");
+        //set all invoice id
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.7'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '0.9.7') {
+        // Insert queries here required to update to DB version 0.9.8
+        mysqli_query($mysqli, "ALTER TABLE `user_settings` ADD `user_config_dashboard_financial_enable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `user_config_records_per_page`");
+        mysqli_query($mysqli, "ALTER TABLE `user_settings` ADD `user_config_dashboard_technical_enable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `user_config_dashboard_financial_enable`");
+        //set all invoice id
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '0.9.8') {
+        //Insert queries here required to update to DB version 0.9.9
+        mysqli_query($mysqli, "ALTER TABLE `domains` ADD `domain_notes` TEXT NULL DEFAULT NULL AFTER `domain_raw_whois`");
+
+        //Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.9'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '0.9.9') {
+        //Insert queries here required to update to DB version 1.0.0
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_destructive_deletes_enable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `config_timezone`");
+
+        //Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.0'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.0') {
+        //Insert queries here required to update to DB version 1.0.1
+        mysqli_query($mysqli, "ALTER TABLE `assets` MODIFY `asset_uri` VARCHAR(500) DEFAULT NULL");
+        mysqli_query($mysqli, "ALTER TABLE `assets` ADD `asset_uri_2` VARCHAR(500) DEFAULT NULL AFTER `asset_uri`");
+
+        //Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.1'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.1') {
+        //Insert queries here required to update to DB version 1.0.2
+        mysqli_query($mysqli, "ALTER TABLE `logins` MODIFY `login_uri` VARCHAR(500) DEFAULT NULL");
+        mysqli_query($mysqli, "ALTER TABLE `logins` ADD `login_uri_2` VARCHAR(500) DEFAULT NULL AFTER `login_uri`");
+        mysqli_query($mysqli, "ALTER TABLE `assets` ADD `asset_nat_ip` VARCHAR(200) DEFAULT NULL AFTER `asset_ip`");
+
+        //Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.2'");
+    }
+
+
+
+    if (CURRENT_DATABASE_VERSION == '1.0.2') {
+        //Insert queries here required to update to DB version 1.0.3
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_stripe_expense_vendor` INT(11) NOT NULL DEFAULT 0 AFTER `config_stripe_account`");
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_stripe_expense_category` INT(11) NOT NULL DEFAULT 0 AFTER `config_stripe_expense_vendor`");
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_stripe_percentage_fee` DECIMAL(4,4) NOT NULL DEFAULT 0.029 AFTER `config_stripe_expense_category`");
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_stripe_flat_fee` DECIMAL(15,2) NOT NULL DEFAULT 0.30 AFTER `config_stripe_percentage_fee`");
+        mysqli_query($mysqli, "ALTER TABLE `settings` CHANGE `config_stripe_account` `config_stripe_account` INT(11) NOT NULL DEFAULT 0");
+
+        //Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.3'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.3') {
+        //Insert queries here required to update to DB version 1.0.4
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_ai_enable` TINYINT(1) DEFAULT 0 AFTER `config_stripe_percentage_fee`");
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_ai_provider` VARCHAR(250) DEFAULT NULL AFTER `config_ai_enable`");
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_ai_url` VARCHAR(250) DEFAULT NULL AFTER `config_ai_provider`");
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_ai_api_key` VARCHAR(250) DEFAULT NULL AFTER `config_ai_url`");
+
+        //Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.4'");
+    }
+
+    // Be sure to change database_version.php to reflect the version you are updating to here
+    // Please add this same comment block to the bottom of this file, and update the version number.
+    // Uncomment Below Lines, to add additional database updates
+    //
+
+    if (CURRENT_DATABASE_VERSION == '1.0.4') {
+        //Insert queries here required to update to DB version 1.0.5
+        mysqli_query($mysqli, "ALTER TABLE `tickets` ADD `ticket_schedule` DATETIME DEFAULT NULL AFTER `ticket_billable`");
+        mysqli_query($mysqli, "ALTER TABLE `tickets` ADD `ticket_onsite` TINYINT(1) NOT NULL DEFAULT 0 AFTER `ticket_schedule`");
+        mysqli_query($mysqli, "ALTER TABLE `email_queue` ADD `email_cal_str` VARCHAR(1024) DEFAULT NULL AFTER `email_content`");
 
         // Then, update the database to the next sequential version
-    //    mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '0.9.2'");
-    //}
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.5') {
+        //Insert queries here required to update to DB version 1.0.6
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_ai_model` VARCHAR(250) DEFAULT NULL AFTER `config_ai_provider`");
+
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.6') {
+        // Insert queries here required to update to DB version 1.0.7
+        mysqli_query($mysqli, "CREATE TABLE `remember_tokens` (`remember_token_id` int(11) NOT NULL AUTO_INCREMENT,`remember_token_token` varchar(255) NOT NULL,`remember_token_user_id` int(11) NOT NULL,`remember_token_created_at` datetime NOT NULL DEFAULT current_timestamp(), PRIMARY KEY (`remember_token_id`))");
+
+        // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.7'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.7') {
+        mysqli_query($mysqli, "ALTER TABLE `user_settings` DROP `user_config_remember_me_token`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.8') {
+        // Removed this as login_asset_id is present in the logins table and allow 1 asset to have many logins.
+        mysqli_query($mysqli, "ALTER TABLE `assets` DROP `asset_login_id`");
+        // Dropped this unused Table as we don't need many to many relationship between assets and logins
+        mysqli_query($mysqli, "DROP TABLE asset_logins");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.0.9'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.0.9') {
+        mysqli_query($mysqli, "ALTER TABLE `transfers` ADD `transfer_method` VARCHAR(200) DEFAULT NULL AFTER `transfer_id`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.0'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.0') {
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_description` TEXT DEFAULT NULL AFTER `file_name`");
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_important` TINYINT(1) NOT NULL DEFAULT '0' AFTER `file_hash`");
+
+        mysqli_query($mysqli, "ALTER TABLE `documents` ADD `document_important` TINYINT(1) NOT NULL DEFAULT '0' AFTER `document_content_raw`");
+
+        mysqli_query($mysqli, "ALTER TABLE `assets` ADD `asset_important` TINYINT(1) NOT NULL DEFAULT '0' AFTER `asset_notes`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.1'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.1') {
+        mysqli_query($mysqli, "ALTER TABLE `scheduled_tickets` ADD `scheduled_ticket_assigned_to` INT(11) NOT NULL DEFAULT '0' AFTER `scheduled_ticket_created_by`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.2'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.2') {
+        // Add DB support for multiple contacts under a vendor
+        mysqli_query($mysqli, "ALTER TABLE `contacts` ADD `contact_vendor_id` INT(11) NOT NULL DEFAULT '0' AFTER `contact_location_id`");
+
+        // Add DB Support to Associate files to an asset example pictures, config backups etc
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_asset_id` INT(11) NOT NULL DEFAULT '0' AFTER `file_folder_id`");
+
+        // Add DB Support for missing Short Description fields
+        mysqli_query($mysqli, "ALTER TABLE `locations` ADD `location_description` TEXT DEFAULT NULL AFTER `location_name`");
+        mysqli_query($mysqli, "ALTER TABLE `software` ADD `software_description` TEXT DEFAULT NULL AFTER `software_name`");
+        mysqli_query($mysqli, "ALTER TABLE `networks` ADD `network_description` TEXT DEFAULT NULL AFTER `network_name`");
+        mysqli_query($mysqli, "ALTER TABLE `certificates` ADD `certificate_description` TEXT DEFAULT NULL AFTER `certificate_name`");
+        mysqli_query($mysqli, "ALTER TABLE `domains` ADD `domain_description` TEXT DEFAULT NULL AFTER `domain_name`");
+
+        // Add DB Support for Location for Events
+        mysqli_query($mysqli, "ALTER TABLE `events` ADD `event_location` TEXT DEFAULT NULL AFTER `event_title`");
+
+        // Add Event Attendees Table to allow multiple Attendees per event
+        mysqli_query($mysqli, "CREATE TABLE `event_attendees` (
+            `attendee_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `attendee_name` VARCHAR(200) DEFAULT NULL,
+            `attendee_email` VARCHAR(200) DEFAULT NULL,
+            `attendee_invitation_status` TINYINT(1) NOT NULL DEFAULT 0,
+            `attendee_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+            `attendee_updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            `attendee_archived_at` DATETIME DEFAULT NULL,
+            `attendee_contact_id` INT(11) NOT NULL DEFAULT 0,
+            `attendee_event_id` INT(11) NOT NULL,
+            PRIMARY KEY (`attendee_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.3'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.3') {
+        mysqli_query($mysqli, "ALTER TABLE `networks` ADD `network_subnet` VARCHAR(200) DEFAULT NULL AFTER `network`");
+        mysqli_query($mysqli, "ALTER TABLE `networks` ADD `network_primary_dns` VARCHAR(200) DEFAULT NULL AFTER `network_gateway`");
+        mysqli_query($mysqli, "ALTER TABLE `networks` ADD `network_secondary_dns` VARCHAR(200) DEFAULT NULL AFTER `network_primary_dns`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.4'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.4') {
+
+        // Add Project Templates
+        mysqli_query($mysqli, "CREATE TABLE `project_templates` (
+            `project_template_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `project_template_name` VARCHAR(200) NOT NULL,
+            `project_template_description` TEXT DEFAULT NULL,
+            `project_template_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+            `project_template_updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            `project_template_archived_at` DATETIME DEFAULT NULL,
+            PRIMARY KEY (`project_template_id`)
+        )");
+
+        // Add Ticket Templates
+        mysqli_query($mysqli, "CREATE TABLE `ticket_templates` (
+            `ticket_template_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `ticket_template_name` VARCHAR(200) NOT NULL,
+            `ticket_template_description` TEXT DEFAULT NULL,
+            `ticket_template_subject` VARCHAR(200) DEFAULT NULL,
+            `ticket_template_details` LONGTEXT DEFAULT NULL,
+            `ticket_template_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+            `ticket_template_updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            `ticket_template_archived_at` DATETIME DEFAULT NULL,
+            `ticket_template_project_template_id` INT(11) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`ticket_template_id`)
+        )");
+
+        // Add Task Templates
+        mysqli_query($mysqli, "CREATE TABLE `task_templates` (
+            `task_template_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `task_template_name` VARCHAR(200) NOT NULL,
+            `task_template_description` TEXT DEFAULT NULL,
+            `task_template_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+            `task_template_updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            `task_template_archived_at` DATETIME DEFAULT NULL,
+            `task_template_ticket_template_id` INT(11) NOT NULL,
+            PRIMARY KEY (`task_template_id`)
+        )");
+
+        mysqli_query($mysqli, "ALTER TABLE `projects` ADD `project_completed_at` DATETIME DEFAULT NULL AFTER `project_updated_at`");
+
+        mysqli_query($mysqli, "ALTER TABLE `tickets` ADD `ticket_project_id` INT(11) NOT NULL DEFAULT 0 AFTER `ticket_invoice_id`");
+
+        mysqli_query($mysqli, "ALTER TABLE `tasks` DROP `task_template`");
+        mysqli_query($mysqli, "ALTER TABLE `tasks` DROP `task_finish_date`");
+        mysqli_query($mysqli, "ALTER TABLE `tasks` DROP `task_project_id`");
+
+        mysqli_query($mysqli, "ALTER TABLE `projects` DROP `project_template`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.5') {
+
+        // Add new ticket_statuses table
+        mysqli_query($mysqli,
+            "CREATE TABLE `ticket_statuses` (
+            `ticket_status_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `ticket_status_name` VARCHAR(200) NOT NULL,
+            `ticket_status_color` VARCHAR(200) NOT NULL,
+            `ticket_status_active` TINYINT(1) NOT NULL DEFAULT '1',
+            PRIMARY KEY (`ticket_status_id`)
+        )");
+
+        // Pre-seed default system/built-in ticket statuses
+        mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'New', ticket_status_color = 'danger'"); // Default ID for new tickets is 1
+        mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'Open', ticket_status_color = 'primary'"); // 2
+        mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'On Hold', ticket_status_color = 'success'"); // 3
+        mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'Auto Close', ticket_status_color = 'dark'"); // 4
+        mysqli_query($mysqli, "INSERT INTO ticket_statuses SET ticket_status_name = 'Closed', ticket_status_color = 'dark'"); // 5
+
+        // Update existing tickets to use new values
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 1 WHERE ticket_status = 'New'"); // New
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 2 WHERE ticket_status = 'Open'"); // Open
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 3 WHERE ticket_status = 'On Hold'"); // On Hold
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 4 WHERE ticket_status = 'Auto Close'"); // Auto Close
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 5 WHERE ticket_closed_at IS NOT NULL"); // Closed
+
+        // Fix Bulk Ticket Closure not having a closed_at Time
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_closed_at = NOW(), ticket_status = 5 WHERE ticket_status = 'Closed' AND ticket_closed_at IS NULL");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.6') {
+
+        // Update existing tickets that did not use the defined statuses to Open
+        //mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 2 WHERE ticket_status NOT IN ('New', 'Open', 'On Hold', 'Auto Close') AND ticket_closed_at IS NULL");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.7'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.7') {
+
+        mysqli_query($mysqli, "ALTER TABLE `projects` ADD `project_due` DATE DEFAULT NULL AFTER `project_description`");
+        mysqli_query($mysqli, "ALTER TABLE `tasks` ADD `task_order` INT(11) NOT NULL DEFAULT 0 AFTER `task_status`");
+        mysqli_query($mysqli, "ALTER TABLE `task_templates` ADD `task_template_order` INT(11) NOT NULL DEFAULT 0 AFTER `task_template_description`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.8') {
+        // Update Ticket Status color to use colors to allow more predefined colors
+        mysqli_query($mysqli, "UPDATE ticket_statuses SET ticket_status_color = '#dc3545' WHERE ticket_status_id = 1"); // New
+        mysqli_query($mysqli, "UPDATE ticket_statuses SET ticket_status_color = '#007bff' WHERE ticket_status_id = 2"); // Open
+        mysqli_query($mysqli, "UPDATE ticket_statuses SET ticket_status_color = '#28a745' WHERE ticket_status_id = 3"); // On Hold
+        mysqli_query($mysqli, "UPDATE ticket_statuses SET ticket_status_color = '#343a40' WHERE ticket_status_id = 4"); // Auto Close
+        mysqli_query($mysqli, "UPDATE ticket_statuses SET ticket_status_color = '#343a40' WHERE ticket_status_id = 5"); // Closed
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.1.9'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.1.9') {
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_login_remember_me_expire` INT(11) NOT NULL DEFAULT 3 AFTER `config_login_key_secret`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.0'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.0') {
+        mysqli_query($mysqli, "ALTER TABLE `ticket_templates` ADD `ticket_template_order` INT(11) NOT NULL DEFAULT 0 AFTER `ticket_template_details`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.1'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.1') {
+
+        // Ticket Templates can have many project templates and Project Template can have have many ticket template, so instead create a many to many table relationship
+        mysqli_query($mysqli, "ALTER TABLE `ticket_templates` DROP `ticket_template_order`");
+        mysqli_query($mysqli, "ALTER TABLE `ticket_templates` DROP `ticket_template_project_template_id`");
+
+        mysqli_query($mysqli,
+            "CREATE TABLE `project_template_ticket_templates` (
+            `ticket_template_id` INT(11) NOT NULL,
+            `project_template_id` INT(11) NOT NULL,
+            `ticket_template_order` INT(11) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`ticket_template_id`,`project_template_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.2'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.2') {
+
+        mysqli_query($mysqli, "ALTER TABLE `tasks` DROP `task_description`");
+        mysqli_query($mysqli, "ALTER TABLE `task_templates` DROP `task_template_description`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.3'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.3') {
+
+        mysqli_query($mysqli, "ALTER TABLE `projects` ADD `project_manager` INT(11) NOT NULL DEFAULT 0 AFTER `project_due`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.4'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.4') {
+
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_project_prefix` VARCHAR(200) NOT NULL DEFAULT 'PRJ-' AFTER `config_default_hourly_rate`");
+
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_project_next_number` INT(11) NOT NULL DEFAULT 1 AFTER `config_project_prefix`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.5') {
+
+        mysqli_query($mysqli, "ALTER TABLE `projects` ADD `project_prefix` VARCHAR(200) DEFAULT NULL AFTER `project_id`");
+        mysqli_query($mysqli, "ALTER TABLE `projects` ADD `project_number` INT(11) NOT NULL DEFAULT 1 AFTER `project_prefix`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.6') {
+
+        mysqli_query($mysqli, "ALTER TABLE `domains` ADD `domain_dnshost` INT(11) NOT NULL DEFAULT 0 AFTER `domain_webhost`");
+        mysqli_query($mysqli, "ALTER TABLE `domains` ADD `domain_mailhost` INT(11) NOT NULL DEFAULT 0 AFTER `domain_dnshost`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.7'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.7') {
+
+        mysqli_query($mysqli, "ALTER TABLE `recurring` ADD `recurring_invoice_email_notify` TINYINT(1) NOT NULL DEFAULT 1 AFTER `recurring_note`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.8') {
+
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_phone_mask` TINYINT(1) NOT NULL DEFAULT 1 AFTER `config_destructive_deletes_enable`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.2.9'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.2.9') {
+
+        mysqli_query($mysqli, "CREATE TABLE `user_permissions` (`user_id` int(11) NOT NULL,`client_id` int(11) NOT NULL, PRIMARY KEY (`user_id`,`client_id`))");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.0'");
+    }
+
+     if (CURRENT_DATABASE_VERSION == '1.3.0') {
+
+         mysqli_query($mysqli, "CREATE TABLE `user_roles` (
+            `user_role_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `user_role_name` VARCHAR(200) NOT NULL,
+            `user_role_description` VARCHAR(200) NULL DEFAULT NULL,
+            `user_role_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `user_role_updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP NULL,
+            `user_role_archived_at` DATETIME NULL,
+            PRIMARY KEY (`user_role_id`)
+        )");
+
+         mysqli_query($mysqli, "INSERT INTO `user_roles` SET user_role_id = 1, user_role_name = 'Accountant', user_role_description = 'Built-in - Limited access to financial-focused modules'");
+         mysqli_query($mysqli, "INSERT INTO `user_roles` SET user_role_id = 2, user_role_name = 'Technician', user_role_description = 'Built-in - Limited access to technical-focused modules'");
+         mysqli_query($mysqli, "INSERT INTO `user_roles` SET user_role_id = 3, user_role_name = 'Administrator', user_role_description = 'Built-in - Full administrative access to all modules (including user management)'");
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.1'");
+     }
+
+     if (CURRENT_DATABASE_VERSION == '1.3.1') {
+         mysqli_query($mysqli, "ALTER TABLE `user_settings` ADD `user_config_calendar_first_day` TINYINT(1) NOT NULL DEFAULT 0 AFTER `user_config_dashboard_technical_enable`");
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.2'");
+     }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.2') {
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_ticket_default_billable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `config_ticket_new_ticket_notification_email`");
+        mysqli_query($mysqli, "ALTER TABLE `scheduled_tickets` ADD `scheduled_ticket_billable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `scheduled_ticket_frequency`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.3'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.3') {
+    //     // Insert queries here required to update to DB version 1.3.3
+    //     // Then, update the database to the next sequential version
+        mysqli_query($mysqli, "CREATE TABLE `location_tags` (`location_id` int(11) NOT NULL,`tag_id` int(11) NOT NULL, PRIMARY KEY (`location_id`,`tag_id`))");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.4'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.4') {
+        mysqli_query($mysqli, "ALTER TABLE `client_tags` CHANGE `client_tag_client_id` `client_id` INT(11) NOT NULL");
+        mysqli_query($mysqli, "ALTER TABLE `client_tags` CHANGE `client_tag_tag_id` `tag_id` INT(11) NOT NULL");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.5') {
+        mysqli_query($mysqli, "CREATE TABLE `contact_tags` (`contact_id` int(11) NOT NULL,`tag_id` int(11) NOT NULL, PRIMARY KEY (`contact_id`,`tag_id`))");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.6') {
+        mysqli_query($mysqli, "ALTER TABLE `clients` ADD `client_abbreviation` VARCHAR(10) DEFAULT NULL AFTER `client_tax_id_number`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.7'");
+     }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.7') {
+        mysqli_query($mysqli, "ALTER TABLE `assets` ADD `asset_ipv6` VARCHAR(200) DEFAULT NULL AFTER `asset_ip`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.8') {
+        mysqli_query($mysqli, "DROP TABLE `interfaces`");
+
+        mysqli_query($mysqli, "CREATE TABLE `asset_interfaces` (
+            `interface_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `interface_name` VARCHAR(200) NOT NULL,
+            `interface_mac` VARCHAR(200) DEFAULT NULL,
+            `interface_ip` VARCHAR(200) DEFAULT NULL,
+            `interface_nat_ip` VARCHAR(200) DEFAULT NULL,
+            `interface_ipv6` VARCHAR(200) DEFAULT NULL,
+            `interface_port` VARCHAR(200) DEFAULT NULL,
+            `interface_notes` TEXT DEFAULT NULL,
+            `interface_primary` TINYINT(1) DEFAULT 0,
+            `interface_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `interface_updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP NULL,
+            `interface_archived_at` DATETIME NULL,
+            `interface_network_id` INT(11) DEFAULT NULL,
+            `interface_asset_id` INT(11) NOT NULL,
+            PRIMARY KEY (`interface_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.3.9'");
+
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.3.9') {
+        // Migrate all Network Info from Assets to Interface Table and make it primary interface
+        $sql = mysqli_query($mysqli, "SELECT * FROM assets");
+        while ($row = mysqli_fetch_array($sql)) {
+            $asset_id = intval($row['asset_id']);
+            $mac = sanitizeInput($row['asset_mac']);
+            $ip = sanitizeInput($row['asset_ip']);
+            $nat_ip = sanitizeInput($row['asset_nat_ip']);
+            $ipv6 = sanitizeInput($row['asset_ipv6']);
+            $network = intval($row['asset_network_id']);
+
+            mysqli_query($mysqli, "INSERT INTO `asset_interfaces` SET interface_name = 'Primary', interface_mac = '$mac', interface_ip = '$ip', interface_nat_ip = '$nat_ip', interface_ipv6 = '$ipv6', interface_port = 'eth0', interface_primary = 1, interface_network_id = $network, interface_asset_id = $asset_id");
+        }
+
+        // Drop Fields from assets as they moved to asset_interfaces
+        mysqli_query($mysqli, "ALTER TABLE `assets` DROP `asset_ip`");
+        mysqli_query($mysqli, "ALTER TABLE `assets` DROP `asset_ipv6`");
+        mysqli_query($mysqli, "ALTER TABLE `assets` DROP `asset_nat_ip`");
+        mysqli_query($mysqli, "ALTER TABLE `assets` DROP `asset_mac`");
+        mysqli_query($mysqli, "ALTER TABLE `assets` DROP `asset_network_id`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.0'");
+
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.4.0') {
+
+        mysqli_query($mysqli, "CREATE TABLE `racks` (
+            `rack_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `rack_name` VARCHAR(200) NOT NULL,
+            `rack_description` TEXT DEFAULT NULL,
+            `rack_model` VARCHAR(200) DEFAULT NULL,
+            `rack_depth` VARCHAR(50) DEFAULT NULL,
+            `rack_type` VARCHAR(50) DEFAULT NULL,
+            `rack_units` INT(11) NOT NULL,
+            `rack_photo` VARCHAR(200) DEFAULT NULL,
+            `rack_physical_location` VARCHAR(200) DEFAULT NULL,
+            `rack_notes` TEXT DEFAULT NULL,
+            `rack_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `rack_updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP NULL,
+            `rack_archived_at` DATETIME NULL,
+            `rack_location_id` INT(11) DEFAULT NULL,
+            `rack_client_id` INT(11) NOT NULL,
+            PRIMARY KEY (`rack_id`)
+        )");
+
+        mysqli_query($mysqli, "CREATE TABLE `rack_units` (
+            `unit_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `unit_start_number` INT(11) NOT NULL,
+            `unit_end_number` INT(11) NOT NULL,
+            `unit_device` VARCHAR(200) DEFAULT NULL,
+            `unit_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `unit_updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP NULL,
+            `unit_archived_at` DATETIME NULL,
+            `unit_asset_id` INT(11) DEFAULT NULL,
+            `unit_rack_id` INT(11) NOT NULL,
+            PRIMARY KEY (`unit_id`),
+            FOREIGN KEY (`unit_rack_id`) REFERENCES `racks`(`rack_id`) ON DELETE CASCADE
+        )");
+
+        mysqli_query($mysqli, "CREATE TABLE `patch_panels` (
+            `patch_panel_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `patch_panel_name` VARCHAR(200) NOT NULL,
+            `patch_panel_description` TEXT DEFAULT NULL,
+            `patch_panel_type` VARCHAR(200) DEFAULT NULL,
+            `patch_panel_ports` INT(11) NOT NULL,
+            `patch_panel_physical_location` VARCHAR(200) DEFAULT NULL,
+            `patch_panel_notes` TEXT DEFAULT NULL,
+            `patch_panel_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `patch_panel_updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP NULL,
+            `patch_panel_archived_at` DATETIME NULL,
+            `patch_panel_location_id` INT(11) DEFAULT NULL,
+            `patch_panel_rack_id` INT(11) DEFAULT NULL,
+            `patch_panel_client_id` INT(11) NOT NULL,
+            PRIMARY KEY (`patch_panel_id`)
+        )");
+
+        mysqli_query($mysqli, "CREATE TABLE `patch_panel_ports` (
+            `port_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `port_number` INT(11) NOT NULL,
+            `port_name` VARCHAR(200) DEFAULT NULL,
+            `port_description` TEXT DEFAULT NULL,
+            `port_type` VARCHAR(200) DEFAULT NULL,
+            `port_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `port_updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP NULL,
+            `port_archived_at` DATETIME NULL,
+            `port_asset_id` INT(11) DEFAULT NULL,
+            `port_patch_panel_id` INT(11) NOT NULL,
+            PRIMARY KEY (`port_id`),
+            FOREIGN KEY (`port_patch_panel_id`) REFERENCES `patch_panels`(`patch_panel_id`) ON DELETE CASCADE
+        )");
+
+        mysqli_query($mysqli, "ALTER TABLE `assets` ADD `asset_photo` VARCHAR(200) DEFAULT NULL AFTER `asset_install_date`");
+
+        mysqli_query($mysqli, "ALTER TABLE `assets` ADD `asset_physical_location` VARCHAR(200) DEFAULT NULL AFTER `asset_photo`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.1'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.4.1') {
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_log_retention` INT(11) NOT NULL DEFAULT '90' AFTER `config_login_remember_me_expire`;");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_log_retention` = '2555' WHERE company_id = 1;"); // Set to 7 years for existing installs
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.2'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.4.2') {
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_ticket_email_parse_unknown_senders` INT(1) NOT NULL DEFAULT '0' AFTER `config_ticket_email_parse`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.3'");
+    }
+
+     if (CURRENT_DATABASE_VERSION == '1.4.3') {
+
+         // Add ticket URL key column
+         mysqli_query($mysqli, "ALTER TABLE `tickets` ADD `ticket_url_key` VARCHAR(200) DEFAULT NULL AFTER `ticket_feedback`");
+         // Populate pre-existing columns for open tickets
+         $sql_tickets_1 = mysqli_query($mysqli, "SELECT ticket_id FROM tickets WHERE tickets.ticket_closed_at IS NULL");
+         foreach ($sql_tickets_1 as $row) {
+             $ticket_id = intval($row['ticket_id']);
+             $url_key = randomString(156);
+             mysqli_query($mysqli, "UPDATE tickets SET ticket_url_key = '$url_key' WHERE ticket_id = '$ticket_id'");
+         }
+
+         // Add ticket resolved at column
+         mysqli_query($mysqli, "ALTER TABLE `tickets` ADD `ticket_resolved_at` DATETIME DEFAULT NULL AFTER `ticket_updated_at`");
+         // Populate pre-existing columns for closed tickets
+         $sql_tickets_2 = mysqli_query($mysqli, "SELECT ticket_id, ticket_updated_at, ticket_closed_at FROM tickets WHERE tickets.ticket_closed_at IS NOT NULL");
+         foreach ($sql_tickets_2 as $row) {
+             $ticket_id = intval($row['ticket_id']);
+             $ticket_updated_at = sanitizeInput($row['ticket_updated_at']); // To keep old updated_at time
+             $ticket_closed_at = sanitizeInput($row['ticket_closed_at']);
+             mysqli_query($mysqli, "UPDATE tickets SET ticket_resolved_at = '$ticket_closed_at', ticket_updated_at = '$ticket_updated_at' WHERE ticket_id = '$ticket_id'");
+         }
+
+         // Change ticket status 'Auto close' to 'Resolved'
+         mysqli_query($mysqli, "UPDATE `ticket_statuses` SET `ticket_status_name` = 'Resolved' WHERE `ticket_statuses`.`ticket_status_id` = 4");
+
+         // Auto-close is no longer optional
+         mysqli_query($mysqli, "ALTER TABLE `settings` DROP `config_ticket_autoclose`");
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_ticket_autoclose_hours` = '72'");
+
+         // DB Version
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.4'");
+
+     }
+
+     if (CURRENT_DATABASE_VERSION == '1.4.4') {
+         mysqli_query($mysqli, "ALTER TABLE `api_keys` ADD `api_key_decrypt_hash` VARCHAR(200) NOT NULL AFTER `api_key_secret`");
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.5'");
+     }
+
+     if (CURRENT_DATABASE_VERSION == '1.4.5') {
+         mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_whitelabel_enabled` INT(11) NOT NULL DEFAULT '0' AFTER `config_phone_mask`");
+         mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_whitelabel_key` TEXT NULL DEFAULT NULL AFTER `config_whitelabel_enabled`");
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.6'");
+     }
+
+    if (CURRENT_DATABASE_VERSION == '1.4.6') {
+        mysqli_query($mysqli, "CREATE TABLE `custom_links` (
+            `custom_link_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `custom_link_name` VARCHAR(200) NOT NULL,
+            `custom_link_description` TEXT DEFAULT NULL,
+            `custom_link_uri` VARCHAR(500) NOT NULL,
+            `custom_link_icon` VARCHAR(200) DEFAULT NULL,
+            `custom_link_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `custom_link_updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP NULL,
+            `custom_link_archived_at` DATETIME NULL,
+            PRIMARY KEY (`custom_link_id`)
+        )");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.7'");
+    }
+
+     if (CURRENT_DATABASE_VERSION == '1.4.7') {
+         mysqli_query($mysqli, "ALTER TABLE `documents` ADD `document_client_visible` INT(11) NOT NULL DEFAULT '1' AFTER `document_parent`");
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.8'");
+     }
+
+     if (CURRENT_DATABASE_VERSION == '1.4.8') {
+         mysqli_query($mysqli, "ALTER TABLE `settings` DROP `config_stripe_client_pays_fees`");
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.4.9'");
+     }
+
+     if (CURRENT_DATABASE_VERSION == '1.4.9') {
+
+         // Add new "is admin" identifier on user roles
+         mysqli_query($mysqli, "ALTER TABLE `user_roles` ADD `user_role_is_admin` INT(11) NOT NULL DEFAULT '0' AFTER `user_role_description`");
+         mysqli_query($mysqli, "UPDATE `user_roles` SET `user_role_is_admin` = '1' WHERE `user_role_id` = 3");
+
+         // Add modules
+         mysqli_query($mysqli, "CREATE TABLE `modules` (
+            `module_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `module_name` VARCHAR(200) NOT NULL,
+            `module_description` VARCHAR(200) NULL,
+            PRIMARY KEY (`module_id`)
+         )");
+
+         mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_client', module_description = 'General client & contact management'");
+         mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_support', module_description = 'Access to ticketing, assets and documentation'");
+         mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_credential', module_description = 'Access to client credentials - usernames, passwords and 2FA codes'");
+         mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_sales', module_description = 'Access to quotes, invoices and products'");
+         mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_financial', module_description = 'Access to payments, accounts, expenses and budgets'");
+         mysqli_query($mysqli, "INSERT INTO modules SET module_name = 'module_reporting', module_description = 'Access to all reports'");
+
+         // Add table for storing role<->module permissions
+         mysqli_query($mysqli, "CREATE TABLE `user_role_permissions` (
+            `user_role_id` INT(11) NOT NULL,
+            `module_id` INT(11) NOT NULL,
+            `user_role_permission_level` INT(11) NOT NULL
+         )");
+
+         // Add default permissions for accountant role
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 1, user_role_permission_level = 1"); // Read clients
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 2, user_role_permission_level = 1"); // Read support
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 4, user_role_permission_level = 1"); // Read sales
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 5, user_role_permission_level = 2"); // Modify financial
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 1, module_id = 6, user_role_permission_level = 1"); // Read reports
+
+         // Add default permissions for tech role
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 1, user_role_permission_level = 2"); // Modify clients
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 2, user_role_permission_level = 2"); // Modify support
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 3, user_role_permission_level = 2"); // Modify credentials
+         mysqli_query($mysqli, "INSERT INTO user_role_permissions SET user_role_id = 2, module_id = 4, user_role_permission_level = 2"); // Modify sales
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.0'");
+     }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.0') {
+
+        mysqli_query($mysqli, "DROP TABLE `account_types`");
+
+        mysqli_query($mysqli, "ALTER TABLE `accounts` ADD `account_description` VARCHAR(250) DEFAULT NULL AFTER `account_name`");
+
+        mysqli_query($mysqli, "ALTER TABLE `user_roles` MODIFY `user_role_is_admin` TINYINT(1) NOT NULL DEFAULT '0'");
+
+        mysqli_query($mysqli, "ALTER TABLE `shared_items` ADD `item_recipient` VARCHAR(250) DEFAULT NULL AFTER `item_note`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.1'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.1') {
+
+        mysqli_query($mysqli, "ALTER TABLE `custom_links` ADD `custom_link_location` INT(11) NOT NULL DEFAULT 1 AFTER `custom_link_icon`");
+        mysqli_query($mysqli, "ALTER TABLE `custom_links` ADD `custom_link_new_tab` TINYINT(1) NOT NULL DEFAULT 0 AFTER `custom_link_uri`");
+        mysqli_query($mysqli, "ALTER TABLE `custom_links` ADD `custom_link_order` INT(11) NOT NULL DEFAULT 0 AFTER `custom_link_location`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.2'");
+    }
+
+     if (CURRENT_DATABASE_VERSION == '1.5.2') {
+         mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_invoice_paid_notification_email` VARCHAR(200) DEFAULT NULL AFTER `config_invoice_late_fee_percent`");
+
+         mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.3'");
+     }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.3') {
+        mysqli_query($mysqli, "ALTER TABLE `users` ADD `user_type` TINYINT(1) NOT NULL DEFAULT 1 AFTER `user_password`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.4'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.4') {
+        mysqli_query($mysqli, "ALTER TABLE `user_roles` ADD `user_role_type` TINYINT(1) NOT NULL DEFAULT 1 AFTER `user_role_description`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.5') {
+        mysqli_query($mysqli, "ALTER TABLE `contacts` ADD `contact_user_id` INT(11) NOT NULL DEFAULT 0 AFTER `contact_vendor_id`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.6') {
+        mysqli_query($mysqli, "ALTER TABLE `users` ADD `user_auth_method` VARCHAR(200) NOT NULL DEFAULT 'local' AFTER `user_password`");
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.7'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.7') {
+        // Create Users for contacts that have logins enabled and that are not archived
+        $contacts_sql = mysqli_query($mysqli, "SELECT * FROM `contacts` WHERE contact_archived_at IS NULL AND (contact_auth_method = 'local' OR contact_auth_method = 'azure')");
+        while($row = mysqli_fetch_array($contacts_sql)) {
+            $contact_id = intval($row['contact_id']);
+            $contact_name = mysqli_real_escape_string($mysqli, $row['contact_name']);
+            $contact_email = mysqli_real_escape_string($mysqli, $row['contact_email']);
+            $contact_password_hash = mysqli_real_escape_string($mysqli, $row['contact_password_hash']);
+            $contact_auth_method = mysqli_real_escape_string($mysqli, $row['contact_auth_method']);
+
+            mysqli_query($mysqli, "INSERT INTO users SET user_name = '$contact_name', user_email = '$contact_email', user_password = '$contact_password_hash', user_auth_method = '$contact_auth_method', user_type = 2");
+
+            $user_id = mysqli_insert_id($mysqli);
+
+            mysqli_query($mysqli, "UPDATE `contacts` SET `contact_user_id` = $user_id WHERE contact_id = $contact_id");
+        }
+
+        // Drop Login Related fields from contacts tables as everyone who has a login has been moved over
+        mysqli_query($mysqli, "ALTER TABLE `contacts` DROP `contact_auth_method`, DROP `contact_password_hash`, DROP `contact_password_reset_token`, DROP `contact_token_expire`");
+
+        // Add Password Reset Tokens to users tables
+        mysqli_query($mysqli, "ALTER TABLE `users` ADD `user_password_reset_token` VARCHAR(200) NULL DEFAULT NULL AFTER `user_token`");
+        mysqli_query($mysqli, "ALTER TABLE `users` ADD `user_password_reset_token_expire` DATETIME NULL DEFAULT NULL AFTER `user_password_reset_token`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.8') {
+        // Add task completetion estimate time to tasks and task templates
+        mysqli_query($mysqli, "ALTER TABLE `tasks` ADD `task_completion_estimate` INT(11) NOT NULL DEFAULT 0 AFTER `task_order`");
+        mysqli_query($mysqli, "ALTER TABLE `task_templates` ADD `task_template_completion_estimate` INT(11) NOT NULL DEFAULT 0 AFTER `task_template_order`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.5.9'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.5.9') {
+
+        // Check if the column already exists
+        $result = mysqli_query($mysqli, "SHOW COLUMNS FROM `logins` LIKE 'login_folder_id'");
+        if (mysqli_num_rows($result) == 0) {
+            mysqli_query($mysqli, "ALTER TABLE `logins` ADD `login_folder_id` INT(11) NOT NULL DEFAULT 0 AFTER `login_password_changed_at`");
+        } else {
+            // The column already exists
+            echo "Column 'login_folder_id' already exists in the 'logins' table.";
+        }
+
+        mysqli_query($mysqli, "ALTER TABLE `logins` MODIFY `login_username` VARCHAR(500) DEFAULT NULL");
+
+        mysqli_query($mysqli, "ALTER TABLE `logins` MODIFY `login_description` VARCHAR(500) DEFAULT NULL");
+
+        mysqli_query($mysqli, "ALTER TABLE `tickets` MODIFY `ticket_subject` VARCHAR(500) NOT NULL");
+
+        // Fix some some staggering ticket statuses that were still using a string and not a number
+        // forum.itflow.org/d/1248-bug-unable-to-update-database
+        // Update existing tickets to use new values
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 1 WHERE ticket_status = 'New'"); // New
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 2 WHERE ticket_status = 'Open'"); // Open
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 3 WHERE ticket_status = 'On Hold'"); // On Hold
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 4 WHERE ticket_status = 'Auto Close'"); // Auto Close
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 5 WHERE ticket_status = 'Closed'"); // Closed
+
+        mysqli_query($mysqli, "ALTER TABLE `tickets` MODIFY `ticket_status` INT(11) NOT NULL");
+
+        mysqli_query($mysqli, "ALTER TABLE `ticket_templates` MODIFY `ticket_template_subject` VARCHAR(500) DEFAULT NULL");
+
+        mysqli_query($mysqli, "ALTER TABLE `scheduled_tickets` MODIFY `scheduled_ticket_subject` VARCHAR(500) NOT NULL");
+
+        mysqli_query($mysqli, "ALTER TABLE `logs` MODIFY `log_description` VARCHAR(1000) NOT NULL");
+
+        mysqli_query($mysqli, "ALTER TABLE `notifications` MODIFY `notification` VARCHAR(1000) NOT NULL");
+
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.0'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.0') {
+
+        mysqli_query($mysqli, "CREATE TABLE `asset_history` (
+            `asset_history_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `asset_history_status` VARCHAR(200) NOT NULL,
+            `asset_history_description` VARCHAR(255) NOT NULL,
+            `asset_history_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `asset_history_asset_id` INT(11) NOT NULL,
+            PRIMARY KEY (`asset_history_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.1'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.1') {
+
+        mysqli_query($mysqli, "CREATE TABLE `login_tags` (`login_id` int(11) NOT NULL,`tag_id` int(11) NOT NULL, PRIMARY KEY (`login_id`,`tag_id`))");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.2'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.2') {
+
+        mysqli_query($mysqli, "ALTER TABLE `files` MODIFY `file_description` VARCHAR(250) DEFAULT NULL");
+        mysqli_query($mysqli, "ALTER TABLE `files` MODIFY `file_ext` VARCHAR(10) DEFAULT NULL");
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_created_by` INT(11) NOT NULL DEFAULT 0 AFTER `file_accessed_at`");
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_size` BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER `file_ext`");
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_mime_type` VARCHAR(100) DEFAULT NULL AFTER `file_hash`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.3'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.3') {
+
+        // Find Files and update the Mime Type and File Size
+
+        function scanDirectory($dir, $mysqli) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $file_path = $file->getPathname();
+                    $file_name = $file->getFilename();
+                    // Process the file
+                    processFile($file_path, $file_name, $mysqli);
+                }
+            }
+        }
+
+        function processFile($file_path, $file_name, $mysqli) {
+            // Get the file size
+            $file_size = filesize($file_path);
+            // Get the MIME type
+            $file_mime_type = mime_content_type($file_path);
+
+            // Prepare a statement to check if the file exists in the database
+            $stmt_select = mysqli_prepare($mysqli, "SELECT file_id FROM files WHERE file_reference_name = ?");
+            mysqli_stmt_bind_param($stmt_select, 's', $file_name);
+            mysqli_stmt_execute($stmt_select);
+            mysqli_stmt_store_result($stmt_select);
+
+            if (mysqli_stmt_num_rows($stmt_select) > 0) {
+                // File exists in the database, proceed to update
+                $stmt_update = mysqli_prepare($mysqli, "UPDATE files SET file_mime_type = ?, file_size = ? WHERE file_reference_name = ?");
+                mysqli_stmt_bind_param($stmt_update, 'sis', $file_mime_type, $file_size, $file_name);
+
+                if (mysqli_stmt_execute($stmt_update)) {
+                    echo "Updated: $file_name\n";
+                } else {
+                    echo "Error updating $file_name: " . mysqli_stmt_error($stmt_update) . "\n";
+                }
+                mysqli_stmt_close($stmt_update);
+            } else {
+                echo "No database entry found for: $file_name\n";
+            }
+            mysqli_stmt_close($stmt_select);
+        }
+
+        // Define the uploads directory (modify the path if necessary)
+        $uploads_dir = __DIR__ . '/uploads';
+
+        // Start scanning from the uploads directory
+        scanDirectory($uploads_dir, $mysqli);
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.4'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.4') {
+
+        mysqli_query($mysqli, "CREATE TABLE `ticket_history` (
+            `ticket_history_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `ticket_history_status` VARCHAR(200) NOT NULL,
+            `ticket_history_description` VARCHAR(255) NOT NULL,
+            `ticket_history_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `ticket_history_ticket_id` INT(11) NOT NULL,
+            PRIMARY KEY (`ticket_history_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.5') {
+        mysqli_query($mysqli, "ALTER TABLE `settings` ADD `config_quote_notification_email` VARCHAR(200) DEFAULT NULL AFTER `config_quote_from_email`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.6') {
+        
+        mysqli_query($mysqli, "CREATE TABLE `contact_notes` (
+            `contact_note_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `contact_note_type` VARCHAR(200) NOT NULL,
+            `contact_note` TEXT NULL DEFAULT NULL,
+            `contact_note_created_by` INT(11) NOT NULL,
+            `contact_note_created_at` DATETIME NOT NULL DEFAULT current_timestamp(),
+            `contact_note_updated_at` DATETIME NULL DEFAULT NULL on update CURRENT_TIMESTAMP,
+            `contact_note_archived_at` DATETIME NULL DEFAULT NULL,
+            `contact_note_contact_id` INT(11) NOT NULL,
+            PRIMARY KEY (`contact_note_id`)
+        )");
+
+        mysqli_query($mysqli, "CREATE TABLE `client_notes` (
+            `client_note_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `client_note_type` VARCHAR(200) NOT NULL,
+            `client_note` TEXT NULL DEFAULT NULL,
+            `client_note_created_by` INT(11) NOT NULL,
+            `client_note_created_at` DATETIME NOT NULL DEFAULT current_timestamp(),
+            `client_note_updated_at` DATETIME NULL DEFAULT NULL on update CURRENT_TIMESTAMP,
+            `client_note_archived_at` DATETIME NULL DEFAULT NULL,
+            `client_note_client_id` INT(11) NOT NULL,
+            PRIMARY KEY (`client_note_id`)
+        )");
+
+        mysqli_query($mysqli, "CREATE TABLE `asset_notes` (
+            `asset_note_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `asset_note_type` VARCHAR(200) NOT NULL,
+            `asset_note` TEXT NULL DEFAULT NULL,
+            `asset_note_created_by` INT(11) NOT NULL,
+            `asset_note_created_at` DATETIME NOT NULL DEFAULT current_timestamp(),
+            `asset_note_updated_at` DATETIME NULL DEFAULT NULL on update CURRENT_TIMESTAMP,
+            `asset_note_archived_at` DATETIME NULL DEFAULT NULL,
+            `asset_note_asset_id` INT(11) NOT NULL,
+            PRIMARY KEY (`asset_note_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.7'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.7') {
+        
+        mysqli_query($mysqli, "CREATE TABLE `error_logs` (
+            `error_log_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `error_log_type` VARCHAR(200) NOT NULL,
+            `error_log_details` VARCHAR(1000) NULL DEFAULT NULL,
+            `error_log_created_at` DATETIME NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`error_log_id`)
+        )");
+
+        mysqli_query($mysqli, "CREATE TABLE `auth_logs` (
+            `auth_log_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `auth_log_status` TINYINT(1) NOT NULL,
+            `auth_log_details` VARCHAR(200) NULL DEFAULT NULL,
+            `auth_log_ip` VARCHAR(200) NULL DEFAULT NULL,
+            `auth_log_user_agent` VARCHAR(250) NULL DEFAULT NULL,
+            `auth_log_user_id` INT(11) NOT NULL DEFAULT 0,
+            `auth_log_created_at` DATETIME NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`auth_log_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.8') {
+        
+        // Create New Vendor Templates Table this eventual be used to seperate templates out of the vendors table
+        mysqli_query($mysqli, "CREATE TABLE `vendor_templates` (`vendor_template_id` int(11) AUTO_INCREMENT PRIMARY KEY,
+            `vendor_template_name` varchar(200) NOT NULL,
+            `vendor_template_description` varchar(200) NULL DEFAULT NULL,
+            `vendor_template_phone` varchar(200) NULL DEFAULT NULL,
+            `vendor_template_email` varchar(200) NULL DEFAULT NULL,
+            `vendor_template_website` varchar(200) NULL DEFAULT NULL,
+            `vendor_template_hours` varchar(200) NULL DEFAULT NULL,
+            `vendor_template_created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+            `vendor_template_updated_at` datetime NULL ON UPDATE CURRENT_TIMESTAMP,
+            `vendor_template_archived_at` datetime NULL DEFAULT NULL
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.6.9'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.6.9') {
+        
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_has_thumbnail` TINYINT(1) NOT NULL DEFAULT 0 AFTER `file_mime_type`");
+        mysqli_query($mysqli, "ALTER TABLE `files` ADD `file_has_preview` TINYINT(1) NOT NULL DEFAULT 0 AFTER `file_has_thumbnail`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.0'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.0') {
+        
+        mysqli_query($mysqli, "DROP TABLE `vendor_templates`");
+
+        mysqli_query($mysqli, "CREATE TABLE `vendor_contacts` (
+            `vendor_contact_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            `vendor_contact_name` VARCHAR(200) NOT NULL,
+            `vendor_contact_title` VARCHAR(200) DEFAULT NULL,
+            `vendor_contact_department` VARCHAR(200) DEFAULT NULL,
+            `vendor_contact_email` VARCHAR(200) DEFAULT NULL,
+            `vendor_contact_phone` VARCHAR(200) DEFAULT NULL,
+            `vendor_contact_extension` VARCHAR(200) DEFAULT NULL,
+            `vendor_contact_mobile` VARCHAR(200) DEFAULT NULL,
+            `vendor_contact_notes` TEXT DEFAULT NULL,
+            `vendor_contact_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+            `vendor_contact_updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(),
+            `vendor_contact_archived_at` DATETIME DEFAULT NULL,
+            `vendor_contact_vendor_id` INT(11) NOT NULL DEFAULT 0
+        )");
+        
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.1'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.1') {
+        
+        mysqli_query($mysqli, "DROP TABLE `error_logs`");
+
+        mysqli_query($mysqli, "CREATE TABLE `app_logs` (
+            `app_log_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `app_log_category` VARCHAR(200) NULL DEFAULT NULL,
+            `app_log_type` ENUM('info', 'warning', 'error', 'debug') NOT NULL DEFAULT 'info',
+            `app_log_details` VARCHAR(1000) NULL DEFAULT NULL,
+            `app_log_created_at` DATETIME NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`app_log_id`)
+        )");
+        
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.2'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.2') {
+        mysqli_query($mysqli, "ALTER TABLE `locations` ADD `location_fax` VARCHAR(200) DEFAULT NULL AFTER `location_phone`");
+
+        mysqli_query($mysqli, "DROP TABLE `vendor_contacts`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.3'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.3') {
+        
+        // Add Recurring Payments
+        mysqli_query($mysqli, "CREATE TABLE `recurring_payments` (
+            `recurring_payment_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `recurring_payment_amount` DECIMAL(15,2) NOT NULL,
+            `recurring_payment_currency_code` VARCHAR(10) NOT NULL,
+            `recurring_payment_method` VARCHAR(200) NOT NULL,
+            `recurring_payment_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+            `recurring_payment_updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            `recurring_payment_archived_at` DATETIME DEFAULT NULL,
+            `recurring_payment_account_id` INT(11) NOT NULL,
+            `recurring_payment_recurring_expense_id` INT(11) NOT NULL DEFAULT 0,
+            `recurring_payment_recurring_invoice_id` INT(11) NOT NULL,
+            PRIMARY KEY (`recurring_payment_id`)
+        )");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.4'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.4') {
+        
+        // Remove Recurring Payment Amount as it will use the Recurring Invoice Amount and is unessessary
+        mysqli_query($mysqli, "ALTER TABLE `recurring_payments` DROP `recurring_payment_amount`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.5'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.5') {
+        mysqli_query($mysqli, "CREATE TABLE `client_stripe` (`client_id` INT(11) NOT NULL, `stripe_id` VARCHAR(255) NOT NULL, `stripe_pm` varchar(255) NULL) ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci; ");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.6'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.6') {
+        // Create a field to show connected interface of a foreign asset
+        mysqli_query($mysqli, "ALTER TABLE `asset_interfaces` ADD `interface_connected_asset_interface` INT(11) NOT NULL DEFAULT 0 AFTER `interface_network_id`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.7'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.7') {
+        // Domain history
+        mysqli_query($mysqli, "CREATE TABLE `domain_history` (`domain_history_id` INT(11) NOT NULL AUTO_INCREMENT , `domain_history_column` VARCHAR(200) NOT NULL , `domain_history_old_value` TEXT NOT NULL , `domain_history_new_value` TEXT NOT NULL , `domain_history_domain_id` INT(11) NOT NULL , `domain_history_modified_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`domain_history_id`)) ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.8'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.8') {
+
+        // Use a seperate table for Interface connections / links. This will make it easier to manage.
+        $createInterfaceLinksTable = "
+            CREATE TABLE IF NOT EXISTS `asset_interface_links` (
+                `interface_link_id` INT AUTO_INCREMENT PRIMARY KEY,
+                `interface_a_id` INT NOT NULL,
+                `interface_b_id` INT NOT NULL,
+                `interface_link_type` VARCHAR(100) NULL,
+                `interface_link_status` VARCHAR(50) NULL,
+                `interface_link_created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `interface_link_updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+                
+                CONSTRAINT `fk_interface_a`
+                    FOREIGN KEY (`interface_a_id`)
+                    REFERENCES `asset_interfaces` (`interface_id`)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE,
+
+                CONSTRAINT `fk_interface_b`
+                    FOREIGN KEY (`interface_b_id`)
+                    REFERENCES `asset_interfaces` (`interface_id`)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ";
+        mysqli_query($mysqli, $createInterfaceLinksTable) or die(mysqli_error($mysqli));
+
+        // Drop the old column from asset_interfaces if it exists
+        $dropConnectedColumn = "
+            ALTER TABLE `asset_interfaces`
+            DROP COLUMN IF EXISTS `interface_connected_asset_interface`
+        ";
+        mysqli_query($mysqli, $dropConnectedColumn) or die(mysqli_error($mysqli));
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.7.9'");
+    }
+
+    if (CURRENT_DATABASE_VERSION == '1.7.9') {
+    
+        mysqli_query($mysqli, "ALTER TABLE `settings` DROP `config_cron_key`");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.8.0'");
+    }
+
+    // if (CURRENT_DATABASE_VERSION == '1.8.0') {
+    //     // Insert queries here required to update to DB version 1.8.1
+    //     // Then, update the database to the next sequential version
+    //     mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '1.8.1'");
+    // }
+
 } else {
     // Up-to-date
 }
+

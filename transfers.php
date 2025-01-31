@@ -3,7 +3,30 @@
 $sort = "transfer_date";
 $order = "DESC";
 
-require_once "inc_all.php";
+require_once "includes/inc_all.php";
+
+// Perms
+enforceUserPermission('module_financial');
+
+// Account Transfer From Filter
+if (isset($_GET['account_from']) & !empty($_GET['account_from'])) {
+    $account_from_query = 'AND (expense_account_id = ' . intval($_GET['account_from']) . ')';
+    $account_from_filter = intval($_GET['account_from']);
+} else {
+    // Default - any
+    $account_from_query = '';
+    $account_from_filter = '';
+}
+
+// Account Transfer To Filter
+if (isset($_GET['account_to']) & !empty($_GET['account_to'])) {
+    $account_to_query = 'AND (revenue_account_id = ' . intval($_GET['account_to']) . ')';
+    $account_to_filter = intval($_GET['account_to']);
+} else {
+    // Default - any
+    $account_to_query = '';
+    $account_to_filter = '';
+}
 
 
 //Rebuild URL
@@ -11,11 +34,13 @@ $url_query_strings_sort = http_build_query($get_copy);
 
 $sql = mysqli_query(
     $mysqli,
-    "SELECT SQL_CALC_FOUND_ROWS transfer_created_at, expense_date AS transfer_date, expense_amount AS transfer_amount, expense_account_id AS transfer_account_from, revenue_account_id AS transfer_account_to, transfer_expense_id, transfer_revenue_id , transfer_id, transfer_notes FROM transfers, expenses, revenues
-    WHERE transfer_expense_id = expense_id 
+    "SELECT SQL_CALC_FOUND_ROWS transfer_created_at, expense_date AS transfer_date, expense_amount AS transfer_amount, expense_account_id AS transfer_account_from, revenue_account_id AS transfer_account_to, transfer_expense_id, transfer_revenue_id , transfer_id, transfer_method, transfer_notes FROM transfers, expenses, revenues
+    WHERE transfer_expense_id = expense_id
     AND transfer_revenue_id = revenue_id
+    $account_from_query
+    $account_to_query
     AND DATE(expense_date) BETWEEN '$dtf' AND '$dtt'
-    AND (transfer_notes LIKE '%$q%')
+    AND (transfer_notes LIKE '%$q%' OR transfer_method LIKE '%$q%')
     ORDER BY $sort $order LIMIT $record_from, $record_to"
 );
 
@@ -44,12 +69,12 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         </div>
                     </div>
                 </div>
-                <div class="collapse mt-3 <?php if (!empty($_GET['dtf']) || $_GET['canned_date'] !== "custom" ) { echo "show"; } ?>" id="advancedFilter">
+                <div class="collapse mt-3 <?php if (!empty($_GET['dtf']) || $_GET['canned_date'] !== "custom" || $account_from_filter || $account_to_filter ) { echo "show"; } ?>" id="advancedFilter">
                     <div class="row">
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Canned Date</label>
-                                <select class="form-control select2" name="canned_date">
+                                <select onchange="this.form.submit()" class="form-control select2" name="canned_date">
                                     <option <?php if ($_GET['canned_date'] == "custom") { echo "selected"; } ?> value="custom">Custom</option>
                                     <option <?php if ($_GET['canned_date'] == "today") { echo "selected"; } ?> value="today">Today</option>
                                     <option <?php if ($_GET['canned_date'] == "yesterday") { echo "selected"; } ?> value="yesterday">Yesterday</option>
@@ -65,13 +90,53 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Date From</label>
-                                <input type="date" class="form-control" name="dtf" max="2999-12-31" value="<?php echo nullable_htmlentities($dtf); ?>">
+                                <input onchange="this.form.submit()" type="date" class="form-control" name="dtf" max="2999-12-31" value="<?php echo nullable_htmlentities($dtf); ?>">
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Date To</label>
-                                <input type="date" class="form-control" name="dtt" max="2999-12-31" value="<?php echo nullable_htmlentities($dtt); ?>">
+                                <input onchange="this.form.submit()" type="date" class="form-control" name="dtt" max="2999-12-31" value="<?php echo nullable_htmlentities($dtt); ?>">
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
+                            <div class="form-group">
+                                <label>Account From</label>
+                                <select class="form-control select2" name="account_from" onchange="this.form.submit()">
+                                    <option value="">- All Accounts -</option>
+
+                                    <?php
+                                    $sql_accounts_from_filter = mysqli_query($mysqli, "SELECT * FROM accounts WHERE account_archived_at IS NULL ORDER BY account_name ASC");
+                                    while ($row = mysqli_fetch_array($sql_accounts_from_filter)) {
+                                        $account_id = intval($row['account_id']);
+                                        $account_name = nullable_htmlentities($row['account_name']);
+                                    ?>
+                                        <option <?php if ($account_from_filter == $account_id) { echo "selected"; } ?> value="<?php echo $account_id; ?>"><?php echo $account_name; ?></option>
+                                    <?php
+                                    }
+                                    ?>
+
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
+                            <div class="form-group">
+                                <label>Account To</label>
+                                <select class="form-control select2" name="account_to" onchange="this.form.submit()">
+                                    <option value="">- All Accounts -</option>
+
+                                    <?php
+                                    $sql_accounts_to_filter = mysqli_query($mysqli, "SELECT * FROM accounts WHERE account_archived_at IS NULL ORDER BY account_name ASC");
+                                    while ($row = mysqli_fetch_array($sql_accounts_to_filter)) {
+                                        $account_id = intval($row['account_id']);
+                                        $account_name = nullable_htmlentities($row['account_name']);
+                                    ?>
+                                        <option <?php if ($account_to_filter == $account_id) { echo "selected"; } ?> value="<?php echo $account_id; ?>"><?php echo $account_name; ?></option>
+                                    <?php
+                                    }
+                                    ?>
+
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -82,11 +147,36 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <table class="table table-striped table-borderless table-hover">
                     <thead class="text-dark <?php if ($num_rows[0] == 0) { echo "d-none"; } ?>">
                     <tr>
-                        <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_date&order=<?php echo $disp; ?>">Date</a></th>
-                        <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_account_from&order=<?php echo $disp; ?>">From Account</a></th>
-                        <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_account_to&order=<?php echo $disp; ?>">To Account</a></th>
-                        <th><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_notes&order=<?php echo $disp; ?>">Notes</a></th>
-                        <th class="text-right"><a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_amount&order=<?php echo $disp; ?>">Amount</a></th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_date&order=<?php echo $disp; ?>">
+                                Date <?php if ($sort == 'transfer_date') { echo $order_icon; } ?>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_account_from&order=<?php echo $disp; ?>">
+                                From Account <?php if ($sort == 'transfer_account_from') { echo $order_icon; } ?>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_account_to&order=<?php echo $disp; ?>">
+                                To Account <?php if ($sort == 'transfer_account_to') { echo $order_icon; } ?>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_method&order=<?php echo $disp; ?>">
+                                Method <?php if ($sort == 'transfer_method') { echo $order_icon; } ?>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_notes&order=<?php echo $disp; ?>">
+                                Notes <?php if ($sort == 'transfer_notes') { echo $order_icon; } ?>
+                            </a>
+                        </th>
+                        <th class="text-right">
+                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=transfer_amount&order=<?php echo $disp; ?>">
+                                Amount <?php if ($sort == 'transfer_amount') { echo $order_icon; } ?>
+                            </a>
+                        </th>
                         <th class="text-center">Action</th>
                     </tr>
                     </thead>
@@ -99,6 +189,12 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         $transfer_account_from = intval($row['transfer_account_from']);
                         $transfer_account_to = intval($row['transfer_account_to']);
                         $transfer_amount = floatval($row['transfer_amount']);
+                        $transfer_method = nullable_htmlentities($row['transfer_method']);
+                        if($transfer_method) {
+                            $transfer_method_display = $transfer_method;
+                        } else {  
+                            $transfer_method_display = "-";
+                        }
                         $transfer_notes = nullable_htmlentities($row['transfer_notes']);
                         if(empty($transfer_notes)) {
                             $transfer_notes_display = "-";
@@ -134,6 +230,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             <td><a class="text-dark" href="#" data-toggle="modal" data-target="#editTransferModal<?php echo $transfer_id; ?>"><?php echo $transfer_date; ?></a></td>
                             <td><?php echo "$account_from_archived_display$account_name_from"; ?></td>
                             <td><?php echo "$account_to_archived_display$account_name_to"; ?></td>
+                            <td><?php echo $transfer_method_display; ?></td>
                             <td><?php echo $transfer_notes_display; ?></td>
                             <td class="text-bold text-right"><?php echo numfmt_format_currency($currency_format, $transfer_amount, $session_company_currency); ?></td>
                             <td>
@@ -156,7 +253,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                         <?php
 
-                        require "transfer_edit_modal.php";
+                        require "modals/transfer_edit_modal.php";
 
 
                     }
@@ -166,13 +263,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     </tbody>
                 </table>
             </div>
-            <?php require_once "pagination.php";
+            <?php require_once "includes/filter_footer.php";
  ?>
         </div>
     </div>
 
 <?php
-require_once "transfer_add_modal.php";
+require_once "modals/transfer_add_modal.php";
 
-require_once "footer.php";
+require_once "includes/footer.php";
 

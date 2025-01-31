@@ -1,6 +1,6 @@
 <?php
 
-require_once "inc_all_reports.php";
+require_once "includes/inc_all_reports.php";
 
 validateAccountantRole();
 
@@ -66,7 +66,7 @@ validateAccountantRole();
                     ?>
 
                     <tr>
-                        <td><a href="client_overview.php?client_id=<?php echo $client_id; ?>"><?php echo $client_name; ?></a></td>
+                        <td><a href="client_invoices.php?client_id=<?php echo $client_id; ?>"><?php echo $client_name; ?></a></td>
                         <td class="text-right"><?php echo numfmt_format_currency($currency_format, $balance, $session_company_currency); ?></td>
                     </tr>
                     <?php
@@ -80,5 +80,5 @@ validateAccountantRole();
 </div>
 
 <?php
-require_once "footer.php";
+require_once "includes/footer.php";
 

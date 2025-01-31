@@ -52,7 +52,9 @@
             }
             timerInterval = setInterval(countTime, 1000);
             isPaused = false;
-            document.getElementById("startStopTimer").innerText = "Pause";
+            document.getElementById("startStopTimer").innerHTML = "<i class='fas fa-pause'></i>";
+            localStorage.setItem("ticket-timer-running-" + ticketID, "true");
+
         }
 
         function pauseTimer() {
@@ -64,12 +66,15 @@
             localStorage.setItem(getLocalStorageKey("pausedTime"), currentElapsed.toString());
             localStorage.removeItem(getLocalStorageKey("startTime"));
             isPaused = true;
-            document.getElementById("startStopTimer").innerText = "Start";
+            document.getElementById("startStopTimer").innerHTML = "<i class='fas fa-play'></i>";
+            localStorage.setItem("ticket-timer-running-" + ticketID, "false");
+
         }
 
         function clearTimeStorage() {
             localStorage.removeItem(getLocalStorageKey("startTime"));
             localStorage.removeItem(getLocalStorageKey("pausedTime"));
+            localStorage.removeItem("ticket-timer-running-" + ticketID);
         }
 
         function resetTimer() {
@@ -79,8 +84,9 @@
                 elapsedSecs = 0;
                 clearTimeStorage();
                 displayTime();
-                document.getElementById("startStopTimer").innerText = "Start";
+                document.getElementById("startStopTimer").innerHTML = "<i class='fas fa-play'></i>";
             }
+            localStorage.setItem("ticket-timer-running-" + ticketID, "false");
         }
 
         function forceResetTimer() {
@@ -89,9 +95,8 @@
             elapsedSecs = 0;
             clearTimeStorage();
             displayTime();
-            document.getElementById("startStopTimer").innerText = "Start";
+            document.getElementById("startStopTimer").innerHTML = "<i class='fas fa-play'></i>";
         }
-        
 
         function handleInputFocus() {
             if (!isPaused) {
@@ -104,7 +109,7 @@
             const minutes = parseInt(document.getElementById("minutes").value, 10) || 0;
             const seconds = parseInt(document.getElementById("seconds").value, 10) || 0;
             elapsedSecs = (hours * 3600) + (minutes * 60) + seconds;
-            
+
             // Update local storage so the manually entered time is retained even if the page is reloaded.
             if (!timerInterval) {
                 localStorage.setItem(getLocalStorageKey("pausedTime"), elapsedSecs.toString());
@@ -114,15 +119,24 @@
                 localStorage.removeItem(getLocalStorageKey("pausedTime"));
             }
         }
-        
+
+        // Function to check status and pause timer
+        function checkStatusAndPauseTimer() {
+            var status = document.querySelector('select[name="status"]').value;
+            if (status.includes("Pending") || status.includes("Close")) {
+                pauseTimer();
+            }
+        }
+
         document.getElementById("hours").addEventListener('change', updateTimeFromInput);
         document.getElementById("minutes").addEventListener('change', updateTimeFromInput);
         document.getElementById("seconds").addEventListener('change', updateTimeFromInput);
-        
 
         document.getElementById("hours").addEventListener('focus', handleInputFocus);
         document.getElementById("minutes").addEventListener('focus', handleInputFocus);
         document.getElementById("seconds").addEventListener('focus', handleInputFocus);
+
+        document.querySelector('select[name="status"]').addEventListener('change', checkStatusAndPauseTimer);
 
         document.getElementById("startStopTimer").addEventListener('click', function() {
             if (timerInterval === null) {
@@ -141,15 +155,21 @@
             setTimeout(forceResetTimer, 100); // 100ms delay should suffice, but you can adjust as needed.
         });
 
+        document.getElementById("ticket_close").addEventListener('click', function() {
+            // Wait for other synchronous actions (if any) to complete before resetting the timer.
+            setTimeout(clearTimeStorage, 100); // 100ms delay should suffice, but you can adjust as needed.
+        });
+
         try {
             displayTime();
             if (!localStorage.getItem(getLocalStorageKey("startTime")) && !localStorage.getItem(getLocalStorageKey("pausedTime"))) {
-                // If first time, start the timer automatically
                 startTimer();
             } else if (localStorage.getItem(getLocalStorageKey("startTime"))) {
-                // Continue timer if it was running before
                 startTimer();
             }
+
+            // Check and pause timer if status is pending
+            checkStatusAndPauseTimer();
         } catch (error) {
             console.error("There was an issue initializing the timer:", error);
         }

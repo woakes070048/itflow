@@ -4,8 +4,7 @@
 $sort = "notification_timestamp";
 $order = "DESC";
 
-require_once "inc_all.php";
-
+require_once "includes/inc_all.php";
 
 //Rebuild URL
 
@@ -13,12 +12,11 @@ $url_query_strings_sort = http_build_query($get_copy);
 
 $sql = mysqli_query(
     $mysqli,
-    "SELECT SQL_CALC_FOUND_ROWS * FROM notifications 
-    LEFT JOIN users ON notification_dismissed_by = user_id 
+    "SELECT SQL_CALC_FOUND_ROWS * FROM notifications
     LEFT JOIN clients ON notification_client_id = client_id
-    WHERE (notification_type LIKE '%$q%' OR notification LIKE '%$q%' OR user_name LIKE '%$q%' OR client_name LIKE '%$q%')
+    WHERE (notification_type LIKE '%$q%' OR notification LIKE '%$q%' OR client_name LIKE '%$q%')
     AND DATE(notification_timestamp) BETWEEN '$dtf' AND '$dtt'
-    AND (notification_user_id = $session_user_id OR notification_user_id = 0)
+    AND notification_user_id = $session_user_id
     AND notification_dismissed_at IS NOT NULL
     ORDER BY $sort $order
     LIMIT $record_from, $record_to
@@ -70,53 +68,29 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <tr>
                         <th>
                             <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=notification_timestamp&order=<?php echo $disp; ?>">
-                                Timestamp 
-                                <?php if($sort == "notification_timestamp") { ?>
-                                    <i class="fa fa-sort-numeric<?php if ($disp == 'ASC') { echo "-up"; } else { echo "-down"; }?>"></i>
-                                <?php } ?>
+                                Timestamp <?php if ($sort == 'notification_timestamp') { echo $order_icon; } ?>
                             </a>
                         </th>
                         <th>
                             <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=notification_type&order=<?php echo $disp; ?>">
-                                Type
-                                <?php if($sort == "notification_type") { ?> 
-                                    <i class="fa fa-sort-alpha<?php if ($disp == 'ASC') { echo "-up"; } else { echo "-down"; }?>"></i>
-                                <?php } ?>
+                                Type <?php if ($sort == 'notification_type') { echo $order_icon; } ?>
                             </a>
                         </th>
                         <th>
                             <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=notification&order=<?php echo $disp; ?>">
-                                Notification
-                                <?php if($sort == "notification") { ?>
-                                    <i class="fa fa-sort-alpha<?php if ($disp == 'ASC') { echo "-up"; } else { echo "-down"; }?>"></i>
-                                <?php } ?>
+                                Notification <?php if ($sort == 'notification') { echo $order_icon; } ?>
                             </a>
                         </th>
                         <th>
                             <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=client_name&order=<?php echo $disp; ?>">
-                                Client
-                                <?php if($sort == "client_name") { ?>
-                                    <i class="fa fa-sort-alpha<?php if ($disp == 'ASC') { echo "-up"; } else { echo "-down"; }?>"></i>
-                                <?php } ?>
+                                Client <?php if ($sort == 'client_name') { echo $order_icon; } ?>
                             </a>
                         </th>
                         <th>
                             <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=notification_dismissed_at&order=<?php echo $disp; ?>">
-                                Dismissed At
-                                <?php if($sort == "notification_dismissed_at") { ?>
-                                    <i class="fa fa-sort-numeric<?php if ($disp == 'ASC') { echo "-up"; } else { echo "-down"; }?>"></i>
-                                <?php } ?>
+                                Dismissed At <?php if ($sort == 'notification_dismissed_at') { echo $order_icon; } ?>
                             </a>
                         </th>
-                        <th>
-                            <a class="text-dark" href="?<?php echo $url_query_strings_sort; ?>&sort=user_name&order=<?php echo $disp; ?>">
-                                Dismissed By
-                                <?php if($sort == "user_name") { ?>
-                                    <i class="fa fa-sort-alpha<?php if ($disp == 'ASC') { echo "-up"; } else { echo "-down"; }?>"></i>
-                                <?php } ?>
-                            </a>
-                        </th>
-
                     </tr>
                     </thead>
                     <tbody>
@@ -128,7 +102,6 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     $notification_type = nullable_htmlentities($row['notification_type']);
                     $notification = nullable_htmlentities($row['notification']);
                     $notification_dismissed_at = nullable_htmlentities($row['notification_dismissed_at']);
-                    $user_name = nullable_htmlentities($row['user_name']);
                     $client_name = nullable_htmlentities($row['client_name']);
                     $client_id = intval($row['client_id']);
                     if (empty($client_name)) {
@@ -144,19 +117,16 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <td><?php echo $notification; ?></td>
                         <td><?php echo $client_name_display; ?></td>
                         <td><?php echo $notification_dismissed_at; ?></td>
-                        <td><?php echo $user_name; ?></td>
 
                         <?php } ?>
-
 
                     </tbody>
                 </table>
             </div>
-            <?php require_once "pagination.php";
- ?>
+            <?php require_once "includes/filter_footer.php"; ?>
         </div>
     </div>
 
 <?php
-require_once "footer.php";
 
+require_once "includes/footer.php";

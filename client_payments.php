@@ -4,8 +4,10 @@
 $sort = "payment_date";
 $order = "DESC";
 
-require_once "inc_all_client.php";
+require_once "includes/inc_all_client.php";
 
+// Perms
+enforceUserPermission('module_financial');
 
 //Rebuild URL
 $url_query_strings_sort = http_build_query($get_copy);
@@ -25,8 +27,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 ?>
 
 <div class="card card-dark">
-    <div class="card-header py-3">
-        <h3 class="card-title"><i class="fa fa-fw fa-credit-card mr-2"></i>Payments</h3>
+    <div class="card-header py-2">
+        <h3 class="card-title mt-2"><i class="fa fa-fw fa-credit-card mr-2"></i>Payments</h3>
+        <?php if ($num_rows[0] > 0) { ?>
+            <div class="card-tools">
+                <button type="button" class="btn btn-default" data-toggle="modal" data-target="#exportPaymentModal"><i class="fa fa-fw fa-download mr-2"></i>Export</button>
+            </div>
+        <?php } ?>
     </div>
     <div class="card-body">
         <form autocomplete="off">
@@ -44,7 +51,6 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                 <div class="col-md-8">
                     <div class="float-right">
-                        <button type="button" class="btn btn-default" data-toggle="modal" data-target="#exportPaymentModal"><i class="fa fa-fw fa-download mr-2"></i>Export</button>
                     </div>
                 </div>
 
@@ -55,14 +61,47 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
             <table class="table table-striped table-borderless table-hover">
                 <thead class="text-dark <?php if ($num_rows[0] == 0) { echo "d-none"; } ?>">
                 <tr>
-                    <th><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_date&order=<?php echo $disp; ?>">Payment Date</a></th>
-                    <th><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=invoice_date&order=<?php echo $disp; ?>">Invoice Date</a></th>
-                    <th><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=invoice_number&order=<?php echo $disp; ?>">Invoice</a></th>
-                    <th class="text-right"><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=invoice_amount&order=<?php echo $disp; ?>">Invoice Amount</a></th>
-                    <th class="text-right"><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_amount&order=<?php echo $disp; ?>">Payment Amount</a></th>
-                    <th><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_method&order=<?php echo $disp; ?>">Method</a></th>
-                    <th><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_reference&order=<?php echo $disp; ?>">Reference</a></th>
-                    <th><a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=account_name&order=<?php echo $disp; ?>">Account</a></th>
+                    <th>
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_date&order=<?php echo $disp; ?>">
+                            Payment Date <?php if ($sort == 'payment_date') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=invoice_date&order=<?php echo $disp; ?>">
+                            Invoice Date <?php if ($sort == 'invoice_date') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=invoice_number&order=<?php echo $disp; ?>">
+                            Invoice <?php if ($sort == 'invoice_number') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th class="text-right">
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=invoice_amount&order=<?php echo $disp; ?>">
+                            Invoice Amount <?php if ($sort == 'invoice_amount') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th class="text-right">
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_amount&order=<?php echo $disp; ?>">
+                            Payment Amount <?php if ($sort == 'payment_amount') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_method&order=<?php echo $disp; ?>">
+                            Method <?php if ($sort == 'payment_method') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=payment_reference&order=<?php echo $disp; ?>">
+                            Reference <?php if ($sort == 'payment_reference') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=account_name&order=<?php echo $disp; ?>">
+                            Account <?php if ($sort == 'account_name') { echo $order_icon; } ?>
+                        </a>
+                    </th>
+                    <th></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -76,6 +115,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     $invoice_amount = floatval($row['invoice_amount']);
                     $invoice_currency_code = nullable_htmlentities($row['invoice_currency_code']);
                     $invoice_date = nullable_htmlentities($row['invoice_date']);
+                    $payment_id = intval($row['payment_id']);
                     $payment_date = nullable_htmlentities($row['payment_date']);
                     $payment_method = nullable_htmlentities($row['payment_method']);
                     $payment_reference = nullable_htmlentities($row['payment_reference']);
@@ -93,12 +133,24 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <tr>
                         <td><?php echo $payment_date; ?></td>
                         <td><?php echo $invoice_date; ?></td>
-                        <td class="text-bold"><a href="invoice.php?invoice_id=<?php echo $invoice_id; ?>"><?php echo "$invoice_prefix$invoice_number"; ?></a></td>
+                        <td class="text-bold"><a href="invoice.php?client_id=<?php echo $client_id; ?>&invoice_id=<?php echo $invoice_id; ?>"><?php echo "$invoice_prefix$invoice_number"; ?></a></td>
                         <td class="text-right"><?php echo numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code); ?></td>
                         <td class="text-bold text-right"><?php echo numfmt_format_currency($currency_format, $payment_amount, $payment_currency_code); ?></td>
                         <td><?php echo $payment_method; ?></td>
                         <td><?php echo $payment_reference_display; ?></td>
                         <td><?php echo $account_name; ?></td>
+                        <td>
+                            <div class="dropdown dropleft text-center">
+                                <button class="btn btn-secondary btn-sm" type="button" data-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item text-danger text-bold confirm-link" href="post.php?delete_payment=<?php echo $payment_id; ?>">
+                                        <i class="fas fa-fw fa-trash mr-2"></i>Delete
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
 
                 <?php } ?>
@@ -106,13 +158,11 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 </tbody>
             </table>
         </div>
-        <?php require_once "pagination.php";
+        <?php require_once "includes/filter_footer.php";
  ?>
     </div>
 </div>
 
 <?php
-require_once "client_payment_export_modal.php";
-
-require_once "footer.php";
-
+require_once "modals/client_payment_export_modal.php";
+require_once "includes/footer.php";
