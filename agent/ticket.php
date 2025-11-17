@@ -810,16 +810,17 @@ if (isset($_GET['ticket_id'])) {
             <div class="col-md-3">
 
                 <!-- Ticket details right card -->
-                <div class="card">
+                <div class="card <?php if(!$ticket_resolved_at) { echo "collapsed-card"; } ?>">
                     <div class="card-header">
-                        <a class="text-reset text-decoration-none" href="#" data-toggle="collapse" data-target="#ticketDetailsCard">
-                            <h5 class="card-title mt-1"><i class="fas fa-fw fa-life-ring mr-2"></i>Ticket Details</h5>
-                        </a>
+                        <h5 class="card-title"><i class="fas fa-fw fa-life-ring mr-2"></i>Ticket Details</h5>
+                
                         <div class="card-tools">
-                            <a class="fa fa-chevron-down" href="#" data-toggle="collapse" data-target="#ticketDetailsCard"></a>
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="card-body collapse <?php echo !empty($ticket_resolved_at) ? 'show' : ''; ?>" id="ticketDetailsCard">
+                    <div class="card-body">
 
                         <!-- Created -->
                         <div title="<?php echo $ticket_created_at; ?>">
