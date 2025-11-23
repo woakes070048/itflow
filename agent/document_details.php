@@ -113,9 +113,15 @@ $page_title = $row['document_name'];
                     </div>
                     <div class="col">
                         <div class="float-right">
-                            <div class=""><strong>Date:</strong> <?= date('Y-m-d', strtotime($document_created_at)); ?></div>
+                            <div>
+                                Date:
+                                <strong><?= date('Y-m-d', strtotime($document_created_at)); ?></strong>
+                            </div>
                             <?php if($document_created_by_name) { ?>
-                            <div><strong>Prepared By:</strong> <?= $document_created_by_name ?></div>
+                            <div>
+                                Prepared By:
+                                <strong><?= $document_created_by_name ?></strong>
+                            </div>
                             <?php } ?>
                         </div>
                     </div>
@@ -158,11 +164,11 @@ $page_title = $row['document_name'];
 
                         ?>
                         <tr>
-                            <td><?php echo $document_version_count; ?></td>
-                            <td><?php echo $document_version_created_date; ?></td>
-                            <td><?php echo $document_version_name; ?></td>
-                            <td><?php echo $document_version_description_display; ?></td>
-                            <td><?php echo $document_version_author; ?></td>
+                            <td><?= $document_version_count ?></td>
+                            <td><?= $document_version_created_date ?></td>
+                            <td><?= $document_version_name ?></td>
+                            <td><?= $document_version_description_display ?></td>
+                            <td><?= $document_version_author ?></td>
                         </tr>
                         <?php 
                         $document_version_count++; // Increment the counter
@@ -183,10 +189,10 @@ $page_title = $row['document_name'];
                     <i class="fas fa-fw fa-edit" title="Edit"></i>
                 </button>
                 <button type="button" class="btn btn-secondary mr-1" data-toggle="modal" data-target="#shareModal"
-                    onclick="populateShareModal(<?php echo "$client_id, 'Document', $document_id"; ?>)">
+                    onclick="populateShareModal(<?= "$client_id, 'Document', $document_id"; ?>)">
                     <i class="fas fa-fw fa-share" title="Share"></i>
                 </button>
-                <a class="btn btn-success mr-1" href="post.php?export_document=<?php echo $document_id; ?>"><i class='fas fa-fw fa-file-pdf' title="PDF Export"></i></a>
+                <a class="btn btn-success mr-1" href="post.php?export_document=<?= $document_id ?>"><i class='fas fa-fw fa-file-pdf' title="PDF Export"></i></a>
                 <button type="button" class="btn btn-secondary mr-4" onclick="window.print();"><i class="fas fa-fw fa-print" title="Print"></i></button>
                 <a class="btn btn-warning mr-1 confirm-link" href="post.php?archive_document=<?= $document_id ?>" title="Archive"><i class='fas fa-fw fa-archive'></i></a>
                 <a class="btn btn-danger confirm-link" href="post.php?delete_document=<?= $document_id ?>&from=document_details" title="Delete"><i class='fas fa-fw fa-trash-alt'></i></a>
