@@ -250,6 +250,44 @@ if (isset($_POST['add_client'])) {
 
 }
 
+if (isset($_POST['edit_client'])) {
+
+    enforceUserPermission('module_client', 2);
+
+    require_once 'client_model.php';
+
+    $client_id = intval($_POST['client_id']);
+
+    mysqli_query($mysqli, "UPDATE clients SET client_name = '$name', client_type = '$type', client_website = '$website', client_referral = '$referral', client_rate = $rate, client_net_terms = $net_terms, client_tax_id_number = '$tax_id_number', client_lead = $lead, client_abbreviation = '$abbreviation', client_notes = '$notes' WHERE client_id = $client_id");
+
+    // Create Referral if it doesn't exist
+    $sql = mysqli_query($mysqli, "SELECT category_name FROM categories WHERE category_type = 'Referral' AND category_archived_at IS NULL AND category_name = '$referral'");
+    if(mysqli_num_rows($sql) == 0) {
+        mysqli_query($mysqli, "INSERT INTO categories SET category_name = '$referral', category_type = 'Referral'");
+
+        logAction("Category", "Create", "$session_name created referral category $referral");
+    }
+
+    // Tags
+    // Delete existing tags
+    mysqli_query($mysqli, "DELETE FROM client_tags WHERE client_id = $client_id");
+
+    // Add new tags
+    if(isset($_POST['tags'])) {
+        foreach($_POST['tags'] as $tag) {
+            $tag = intval($tag);
+            mysqli_query($mysqli, "INSERT INTO client_tags SET client_id = $client_id, tag_id = $tag");
+        }
+    }
+
+    logAction("Client", "Edit", "$session_name edited client $name", $client_id, $client_id);
+
+    flash_alert("Client <strong>$name</strong> updated");
+
+    redirect();
+
+}
+
 if (isset($_GET['archive_client'])) {
 
     validateCSRFToken($_GET['csrf_token']);
