@@ -1,20 +1,19 @@
 // bulk_actions.js
-// Allow selecting and editing multiple records at once (no <form> dependency)
+// Shared bulk helper: selection count + simple URL enrichment for bulk actions
 
 // --- Helpers ---
-function getCheckboxes() {
+function getBulkCheckboxes() {
     // Always query fresh in case rows are re-rendered
     return Array.from(document.querySelectorAll('input[type="checkbox"].bulk-select'));
 }
 
-function getSelectedIds() {
-    return getCheckboxes()
-        .filter(cb => cb.checked)
-        .map(cb => cb.value);
+function getSelectedCount() {
+    return getBulkCheckboxes().filter(cb => cb.checked).length;
 }
 
 function updateSelectedCount() {
-    const count = getSelectedIds().length;
+    const count = getSelectedCount();
+
     const selectedCountEl = document.getElementById('selectedCount');
     if (selectedCountEl) {
         selectedCountEl.textContent = count;
@@ -28,95 +27,96 @@ function updateSelectedCount() {
 
 // --- Select All Handling ---
 function checkAll(source) {
-    getCheckboxes().forEach(cb => {
+    getBulkCheckboxes().forEach(cb => {
         cb.checked = source.checked;
     });
     updateSelectedCount();
 }
 
-// Wire select-all checkbox if present
-const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-if (selectAllCheckbox) {
-    selectAllCheckbox.addEventListener('click', function () {
-        checkAll(this);
-    });
-}
+// --- Wire up once DOM is ready ---
+document.addEventListener('DOMContentLoaded', function () {
 
-// --- Per-row Checkbox Handling ---
-document.addEventListener('click', function (e) {
-    const cb = e.target.closest('input[type="checkbox"].bulk-select');
-    if (!cb) return;
+    // Initialize count
     updateSelectedCount();
+
+    // Wire select-all checkbox if present
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('click', function () {
+            checkAll(this);
+        });
+    }
+
+    // Per-row checkbox handling
+    document.addEventListener('click', function (e) {
+        const cb = e.target.closest('input[type="checkbox"].bulk-select');
+        if (!cb) return;
+        updateSelectedCount();
+    });
+
+    // ------------------------------------------------------
+    // Generic bulk handler
+    //
+    // For ANY element with data-bulk="true":
+    //   - Reads base URL from data-modal-url or href
+    //   - Collects ALL checked .bulk-select checkboxes
+    //   - Appends:
+    //        <cb.name> = cb.value
+    //     e.g. file_ids[]=12, document_ids[]=27, client_ids[]=3, etc.
+    //   - Writes URL back to data-modal-url or href
+    //   - DOES NOT prevent default, so ajax-modal / normal links still work
+    // ------------------------------------------------------
+    document.addEventListener('click', function (e) {
+        const trigger = e.target.closest('[data-bulk="true"]');
+        if (!trigger) return;
+
+        const base = trigger.getAttribute('data-modal-url') || trigger.getAttribute('href');
+        if (!base || base === '#') return;
+
+        let url;
+        try {
+            url = new URL(base, window.location.href);
+        } catch (err) {
+            // Invalid URL, bail
+            return;
+        }
+
+        const params = url.searchParams;
+        const checked = getBulkCheckboxes().filter(cb => cb.checked);
+
+        if (!checked.length) {
+            // Nothing selected; do nothing (no ids appended)
+            return;
+        }
+
+        // Collect all unique names (file_ids[], document_ids[], client_ids[], etc.)
+        const namesToClear = new Set();
+        checked.forEach(cb => {
+            if (cb.name) {
+                namesToClear.add(cb.name);
+            }
+        });
+
+        // Clear any existing values for those names
+        namesToClear.forEach(name => params.delete(name));
+
+        // Append each checked checkbox as name=value
+        checked.forEach(cb => {
+            if (!cb.name) return;
+            params.append(cb.name, cb.value);
+        });
+
+        const finalUrl = url.pathname + '?' + params.toString();
+
+        if (trigger.hasAttribute('data-modal-url')) {
+            trigger.setAttribute('data-modal-url', finalUrl);
+        } else {
+            trigger.setAttribute('href', finalUrl);
+        }
+
+        // IMPORTANT:
+        // We do NOT call preventDefault().
+        // Your existing ajax-modal handler / normal link click will continue normally,
+        // now using the updated URL.
+    }, true); // capture so we run before other click handlers
 });
-
-// --- Initialize count on page load ---
-document.addEventListener('DOMContentLoaded', updateSelectedCount);
-
-// ------------------------------------------------------
-// Generic bulk handler driven by data-bulk / data-bulk-names
-// ------------------------------------------------------
-// Behavior:
-//
-// 1) If NO data-bulk-names:
-//      - all checked .bulk-select => ?selected_ids[]=1&selected_ids[]=2...
-//
-// 2) If data-bulk-names="file_ids[],document_ids[]":
-//      - checked name="file_ids[]"  => ?file_ids[]=1&file_ids[]=2...
-//      - checked name="document_ids[]" => ?document_ids[]=5...
-//
-// Works with either data-modal-url or href.
-// Does NOT open modal or prevent default; it just rewrites the URL.
-document.addEventListener('click', function (e) {
-    const trigger = e.target.closest('[data-bulk="true"]');
-    if (!trigger) return;
-
-    // Base URL: prefer data-modal-url (ajax-modal style), fallback to href
-    const baseUrl = trigger.getAttribute('data-modal-url') || trigger.getAttribute('href');
-    if (!baseUrl || baseUrl === '#') {
-        return;
-    }
-
-    const url    = new URL(baseUrl, window.location.origin);
-    const params = url.searchParams;
-
-    const bulkNamesAttr = trigger.getAttribute('data-bulk-names');
-    const checkboxes    = getCheckboxes().filter(cb => cb.checked);
-
-    // Clear previous ids (in case link is reused)
-    params.delete('selected_ids[]');
-
-    if (bulkNamesAttr && bulkNamesAttr.trim() !== '') {
-        // New behavior: group by checkbox name
-        const bulkNames = bulkNamesAttr
-            .split(',')
-            .map(s => s.trim())
-            .filter(Boolean);
-
-        // Clear specific names first
-        bulkNames.forEach(name => params.delete(name));
-
-        // Append values by name
-        bulkNames.forEach(name => {
-            checkboxes.forEach(cb => {
-                if (cb.name === name) {
-                    params.append(name, cb.value);
-                }
-            });
-        });
-    } else {
-        // Old behavior: everything as selected_ids[]
-        checkboxes.forEach(cb => {
-            params.append('selected_ids[]', cb.value);
-        });
-    }
-
-    const finalUrl = url.pathname + '?' + params.toString();
-
-    // Write back to data-modal-url if present, else to href
-    if (trigger.hasAttribute('data-modal-url')) {
-        trigger.setAttribute('data-modal-url', finalUrl);
-    } else {
-        trigger.setAttribute('href', finalUrl);
-    }
-    // NOTE: we do NOT call preventDefault(), we do NOT open modals here.
-}, true); // use capture so this runs before other click handlers

@@ -119,8 +119,8 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <select onchange="this.form.submit()" class="form-control select2" name="tags[]" data-placeholder="- Select Tags -" multiple>
                             <?php
                             $sql_tags_filter = mysqli_query($mysqli, "
-                                SELECT tags.tag_id, tags.tag_name, tag_type 
-                                FROM tags 
+                                SELECT tags.tag_id, tags.tag_name, tag_type
+                                FROM tags
                                 LEFT JOIN location_tags ON location_tags.tag_id = tags.tag_id
                                 LEFT JOIN locations ON location_tags.location_id = locations.location_id
                                 WHERE tag_type = 2
@@ -148,7 +148,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                             <?php
                             $sql_clients_filter = mysqli_query($mysqli, "
-                                SELECT DISTINCT client_id, client_name 
+                                SELECT DISTINCT client_id, client_name
                                 FROM clients
                                 JOIN locations ON location_client_id = client_id
                                 WHERE $archive_query

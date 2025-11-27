@@ -371,8 +371,8 @@ $num_root_items = intval($row_root_files['num']) + intval($row_root_docs['num'])
             <div class="btn-group">
                 <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle" data-toggle="dropdown"><i class="fas fa-fw fa-plus mr-2"></i>New</button>
                 <div class="dropdown-menu">
-                    
-                    
+
+
                     <a class="dropdown-item text-dark ajax-modal" href="#"
                        data-modal-url="modals/file/file_upload.php?client_id=<?= $client_id ?>&folder_id=<?= $get_folder_id ?>">
                         <i class="fas fa-fw fa-cloud-upload-alt mr-2"></i>Upload File
@@ -447,23 +447,14 @@ $num_root_items = intval($row_root_files['num']) + intval($row_root_docs['num'])
                                     </button>
                                     <div class="dropdown-menu">
                                         <a class="dropdown-item ajax-modal" href="#"
-                                           data-modal-url="modals/file/file_bulk_move.php?client_id=<?= $client_id ?>"
+                                           data-modal-url="modals/file/file_bulk_move.php?client_id=<?= $client_id ?>&current_folder_id=<?= $get_folder_id ?>"
                                            data-bulk="true">
                                             <i class="fas fa-fw fa-exchange-alt mr-2"></i>Move Files
-                                        </a>
-                                        <a class="dropdown-item ajax-modal" href="#"
-                                           data-modal-url="modals/document/document_bulk_move.php?client_id=<?= $client_id ?>"
-                                           data-bulk="true">
-                                            <i class="fas fa-fw fa-exchange-alt mr-2"></i>Move Documents
                                         </a>
                                         <div class="dropdown-divider"></div>
                                         <button class="dropdown-item text-danger text-bold"
                                                 type="submit" form="bulkActions" name="bulk_delete_files">
                                             <i class="fas fa-fw fa-trash mr-2"></i>Delete Files
-                                        </button>
-                                        <button class="dropdown-item text-danger text-bold"
-                                                type="submit" form="bulkActions" name="bulk_delete_documents">
-                                            <i class="fas fa-fw fa-trash mr-2"></i>Delete Documents
                                         </button>
                                     </div>
                                 </div>

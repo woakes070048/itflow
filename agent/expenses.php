@@ -94,26 +94,26 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                     <i class="fas fa-fw fa-layer-group mr-2"></i>Bulk Action (<span id="selectedCount">0</span>)
                                 </button>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item ajax-modal" href="#" 
+                                    <a class="dropdown-item ajax-modal" href="#"
                                         data-modal-url="modals/expense/expense_bulk_edit_category.php"
                                         data-bulk="true">
                                         <i class="fas fa-fw fa-list mr-2"></i>Set Category
                                     </a>
                                     <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item ajax-modal" href="#" 
+                                    <a class="dropdown-item ajax-modal" href="#"
                                         data-modal-url="modals/expense/expense_bulk_edit_account.php"
                                         data-bulk="true">
                                         <i class="fas fa-fw fa-piggy-bank mr-2"></i>Set Account
                                     </a>
                                     <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item ajax-modal" href="#" 
+                                    <a class="dropdown-item ajax-modal" href="#"
                                         data-modal-url="modals/expense/expense_bulk_edit_client.php"
                                         data-bulk="true">
                                         <i class="fas fa-fw fa-user mr-2"></i>Set Client
                                     </a>
                                     <?php if ($session_user_role == 3) { ?>
                                     <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-danger text-bold ajax-modal" href="#" 
+                                    <a class="dropdown-item text-danger text-bold ajax-modal" href="#"
                                         data-modal-url="modals/expense/expense_bulk_delete.php"
                                         data-bulk="true">
                                         <i class="fas fa-fw fa-trash mr-2"></i>Delete
@@ -143,7 +143,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                                     <?php
                                     $sql_vendors_filter = mysqli_query($mysqli, "SELECT vendor_id, vendor_name FROM vendors WHERE EXISTS (SELECT 1 FROM expenses WHERE expense_vendor_id = vendor_id) ORDER BY vendor_name ASC");
-                                    
+
                                     while ($row = mysqli_fetch_array($sql_vendors_filter)) {
                                         $vendor_id = intval($row['vendor_id']);
                                         $vendor_name = nullable_htmlentities($row['vendor_name']);
@@ -286,7 +286,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <tr>
                             <td class="pr-0 bg-light">
                                 <div class="form-check">
-                                    <input class="form-check-input bulk-select" type="checkbox" name="selected_ids[]" value="<?= $expense_id ?>">
+                                    <input class="form-check-input bulk-select" type="checkbox" name="expense_ids[]" value="<?= $expense_id ?>">
                                 </div>
                             </td>
                             <td>
