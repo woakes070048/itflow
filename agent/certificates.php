@@ -68,7 +68,8 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <?php if ($num_rows[0] > 0) { ?>
                     <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportCertificateModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"\
+                            data-modal-url="modals/certificate/certificate_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     </div>
@@ -78,7 +79,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
     </div>
     <div class="card-body">
         <form autocomplete="off">
-            <?php if ($client_url) { ?> 
+            <?php if ($client_url) { ?>
             <input type="hidden" name="client_id" value="<?php echo $client_id; ?>">
             <?php } ?>
             <input type="hidden" name="archived" value="<?php echo $archived; ?>">
@@ -103,7 +104,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                             <?php
                             $sql_clients_filter = mysqli_query($mysqli, "
-                                SELECT DISTINCT client_id, client_name 
+                                SELECT DISTINCT client_id, client_name
                                 FROM clients
                                 JOIN certificates ON certificate_client_id = client_id
                                 WHERE $archive_query
@@ -126,7 +127,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                 <div class="col-md-6">
                     <div class="btn-group float-right">
-                        <a href="?<?php echo $client_url; ?>archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>" 
+                        <a href="?<?php echo $client_url; ?>archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>"
                             class="btn btn-<?php if($archived == 1){ echo "primary"; } else { echo "default"; } ?>">
                             <i class="fa fa-fw fa-archive mr-2"></i>Archived
                         </a>
@@ -283,7 +284,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                                 <i class="fas fa-fw fa-archive mr-2"></i>Archive
                                             </a>
                                             <?php } ?>
-                                            
+
                                         <?php } ?>
                                     </div>
                                 </div>
@@ -299,14 +300,9 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
             </form>
         </div>
-        <?php require_once "../includes/filter_footer.php";
- ?>
+        <?php require_once "../includes/filter_footer.php"; ?>
     </div>
 </div>
-
-<?php
-require_once "modals/certificate/certificate_export.php";
-?>
 
 <script src="../js/bulk_actions.js"></script>
 

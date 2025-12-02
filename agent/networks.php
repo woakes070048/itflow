@@ -82,7 +82,8 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <?php if ($num_rows[0] > 0) { ?>
                     <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportNetworkModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/network/network_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     </div>
@@ -108,7 +109,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     </div>
                 </div>
 
-                <?php if ($client_url) { ?> 
+                <?php if ($client_url) { ?>
                 <div class="col-md-2">
                     <div class="input-group">
                         <select class="form-control select2" name="location" onchange="this.form.submit()">
@@ -118,7 +119,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             $sql_locations_filter = mysqli_query($mysqli, "
                                 SELECT DISTINCT location_id, location_name
                                 FROM locations
-                                WHERE location_client_id = $client_id 
+                                WHERE location_client_id = $client_id
                                 AND ( EXISTS (SELECT 1 FROM networks WHERE network_location_id = location_id  AND $archive_query) OR location_id = $location_filter)
                                 ORDER BY location_name ASC
                             ");
@@ -142,7 +143,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                             <?php
                             $sql_clients_filter = mysqli_query($mysqli, "
-                                SELECT DISTINCT client_id, client_name 
+                                SELECT DISTINCT client_id, client_name
                                 FROM clients
                                 JOIN networks ON network_client_id = client_id
                                 WHERE $archive_query
@@ -165,7 +166,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                 <div class="col-md-6">
                     <div class="btn-group float-right">
-                        <a href="?<?php echo $client_url; ?>archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>" 
+                        <a href="?<?php echo $client_url; ?>archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>"
                             class="btn btn-<?php if($archived == 1){ echo "primary"; } else { echo "default"; } ?>">
                             <i class="fa fa-fw fa-archive mr-2"></i>Archived
                         </a>
@@ -352,15 +353,9 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
             </form>
         </div>
-        <?php require_once "../includes/filter_footer.php";
-        ?>
+        <?php require_once "../includes/filter_footer.php"; ?>
     </div>
 </div>
-
-<?php
-require_once "modals/network/network_export.php";
-
-?>
 
 <script src="../js/bulk_actions.js"></script>
 

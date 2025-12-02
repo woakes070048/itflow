@@ -71,12 +71,14 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     </button>
                     <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#addSoftwareFromTemplateModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/software/software_add_from_template.php?<?= $client_url ?>">
                             <i class="fas fa-fw fa-puzzle-piece mr-2"></i>Create from Template
                         </a>
                         <?php if ($num_rows[0] > 0) { ?>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportSoftwareModal">
+                            <a class="dropdown-item text-dark ajax-modal" href="#"
+                                data-modal-url="modals/software/software_export.php?<?= $client_url ?>">
                                 <i class="fa fa-fw fa-download mr-2"></i>Export
                             </a>
                         <?php } ?>
@@ -111,7 +113,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                                 <?php
                                     $sql_clients_filter = mysqli_query($mysqli, "
-                                    SELECT DISTINCT client_id, client_name 
+                                    SELECT DISTINCT client_id, client_name
                                     FROM clients
                                     JOIN software ON software_client_id = client_id
                                     WHERE $archive_query
@@ -212,7 +214,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         if ($software_expire) {
                             $software_expire_ago = timeAgo($software_expire);
                             $software_expire_display = "<div>$software_expire</div><div><small>$software_expire_ago</small></div>";
-                            
+
                             // Convert the expiry date to a timestamp
                             $software_expire_timestamp = strtotime($row['software_expire']);
                             $current_timestamp = time(); // Get current timestamp
@@ -226,16 +228,16 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             } elseif ($days_until_expiry <= 7) {
                                 $tr_class = "table-danger";
                             } elseif ($days_until_expiry <= 45) {
-                                $tr_class = "table-warning";    
+                                $tr_class = "table-warning";
                             } else {
                                 $tr_class = '';
                             }
-                            
+
                         } else {
                             $software_expire_display = "<span class='text-muted'>N/A</span>";
                             $tr_class = '';
                         }
-     
+
                         $software_created_at = nullable_htmlentities($row['software_created_at']);
 
                         $seat_count = 0;
@@ -321,7 +323,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
     </div>
 
 <?php
-
-require_once "modals/software/software_add_from_template.php";
-require_once "modals/software/software_export.php";
 require_once "../includes/footer.php";

@@ -2228,7 +2228,7 @@ if (isset($_POST['export_tickets_csv'])) {
 
     enforceUserPermission('module_support', 2);
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "WHERE ticket_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');

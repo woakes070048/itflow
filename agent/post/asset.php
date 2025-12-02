@@ -9,7 +9,7 @@ defined('FROM_POST_HANDLER') || die("Direct file access is not allowed");
 if (isset($_POST['add_asset'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-    
+
     enforceUserPermission('module_support', 2);
 
     require_once 'asset_model.php';
@@ -77,9 +77,9 @@ if (isset($_POST['add_asset'])) {
 if (isset($_POST['edit_asset'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-    
+
     enforceUserPermission('module_support', 2);
-    
+
     require_once 'asset_model.php';
     $asset_id = intval($_POST['asset_id']);
 
@@ -139,7 +139,7 @@ if (isset($_POST['edit_asset'])) {
 if (isset($_GET['archive_asset'])) {
 
     validateCSRFToken($_GET['csrf_token']);
-    
+
     enforceUserPermission('module_support', 2);
 
     $asset_id = intval($_GET['archive_asset']);
@@ -163,7 +163,7 @@ if (isset($_GET['archive_asset'])) {
 if (isset($_GET['unarchive_asset'])) {
 
     validateCSRFToken($_GET['csrf_token']);
-    
+
     enforceUserPermission('module_support', 2);
 
     $asset_id = intval($_GET['unarchive_asset']);
@@ -187,7 +187,7 @@ if (isset($_GET['unarchive_asset'])) {
 if (isset($_GET['delete_asset'])) {
 
     validateCSRFToken($_GET['csrf_token']);
-    
+
     enforceUserPermission('module_support', 3);
 
     $asset_id = intval($_GET['delete_asset']);
@@ -255,9 +255,9 @@ if (isset($_POST['bulk_assign_asset_tags'])) {
 if (isset($_POST['bulk_assign_asset_location'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-    
+
     enforceUserPermission('module_support', 2);
-    
+
     $location_id = intval($_POST['bulk_location_id']);
 
     // Get Location name and client id for logging and alert
@@ -538,7 +538,7 @@ if (isset($_POST['bulk_unarchive_assets'])) {
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 2);
-    
+
     if (isset($_POST['asset_ids'])) {
 
         $count = count($_POST['asset_ids']);
@@ -824,7 +824,7 @@ if (isset($_POST["import_assets_csv"])) {
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 2);
-    
+
     $client_id = intval($_POST['client_id']);
     $file_name = $_FILES["file"]["tmp_name"];
 
@@ -973,9 +973,9 @@ if (isset($_POST["import_assets_csv"])) {
         logAction("Asset", "Import", "$session_name imported $row_count asset(s) via CSV file", $client_id);
 
         flash_alert("$row_count Asset(s) added, $duplicate_count duplicate(s) detected");
-        
+
         redirect();
-    
+
     }
     //Check for any errors, if there are notify user and redirect
     if ($error) {
@@ -985,7 +985,7 @@ if (isset($_POST["import_assets_csv"])) {
 }
 
 if (isset($_GET['download_assets_csv_template'])) {
-    
+
     $client_id = intval($_GET['download_assets_csv_template']);
 
     //get records from database
@@ -1023,7 +1023,7 @@ if (isset($_POST['export_assets_csv'])) {
 
     enforceUserPermission('module_support');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND asset_client_id = $client_id";
 
@@ -1093,8 +1093,8 @@ if (isset($_POST['add_asset_interface'])) {
 
     // 3) Fetch asset info for logging and alert
     $sql   = mysqli_query($mysqli, "
-        SELECT asset_name, asset_client_id 
-        FROM assets 
+        SELECT asset_name, asset_client_id
+        FROM assets
         WHERE asset_id = $asset_id
     ");
     $row        = mysqli_fetch_array($sql);
@@ -1146,7 +1146,7 @@ if (isset($_POST['add_asset_interface'])) {
 
     // 7) Alert message + redirect
     flash_alert("Interface <strong>$name</strong> created");
-    
+
     redirect();
 
 }
@@ -1156,7 +1156,7 @@ if (isset($_POST['add_asset_multiple_interfaces'])) {
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 2);
-    
+
     $asset_id = intval($_POST['asset_id']);
     $interface_start = intval($_POST['interface_start']);
     $interfaces = intval($_POST['interfaces']);
@@ -1189,9 +1189,9 @@ if (isset($_POST['add_asset_multiple_interfaces'])) {
     }
 
     logAction("Asset Interface", "Bulk Create", "$session_name created $interfaces for asset $asset_name", $client_id, $asset_id);
-    
+
     flash_alert("Created <strong>$interfaces</strong> Interface(s) for asset <strong>$asset_name</strong>");
-    
+
     redirect();
 
 }
@@ -1210,7 +1210,7 @@ if (isset($_POST['edit_asset_interface'])) {
     // 1) Get Asset Name and Client ID for logging and alert message
     $sql = mysqli_query($mysqli, "
         SELECT asset_name, asset_client_id, asset_id
-        FROM asset_interfaces 
+        FROM asset_interfaces
         LEFT JOIN assets ON asset_id = interface_asset_id
         WHERE interface_id = $interface_id
     ");
@@ -1228,7 +1228,7 @@ if (isset($_POST['edit_asset_interface'])) {
             interface_mac        = '$mac',
             interface_ip         = '$ip',
             interface_nat_ip     = '$nat_ip',
-            interface_ipv6       = '$ipv6',   
+            interface_ipv6       = '$ipv6',
             interface_notes      = '$notes',
             interface_network_id = $network
         WHERE interface_id = $interface_id
@@ -1270,7 +1270,7 @@ if (isset($_POST['edit_asset_interface'])) {
 
     // 6) Alert and redirect
     flash_alert("Interface <strong>$name</strong> edited");
-    
+
     redirect();
 
 }
@@ -1336,7 +1336,7 @@ if (isset($_POST['bulk_edit_asset_interface_type'])) {
             // Get Asset Name and Client ID for logging and alert message
             $sql = mysqli_query($mysqli, "
                 SELECT asset_name, asset_client_id, asset_id
-                FROM asset_interfaces 
+                FROM asset_interfaces
                 LEFT JOIN assets ON asset_id = interface_asset_id
                 WHERE interface_id = $interface_id
             ");
@@ -1350,13 +1350,13 @@ if (isset($_POST['bulk_edit_asset_interface_type'])) {
 
             logAction("Asset Interface", "Edit", "$session_name set interface type to $type for asset $asset_name", $client_id, $asset_id);
         }
-        
+
         logAction("Asset Interface", "Bulk Edit", "$session_name set interface type to $type on $interface_count interfaces for asset $asset_name", $client_id);
-        
+
         flash_alert("Type set to <strong>$type</strong> on <strong>$interface_count</strong> interfaces.");
-    
+
     }
-    
+
     redirect();
 
 }
@@ -1383,7 +1383,7 @@ if (isset($_POST['bulk_edit_asset_interface_network'])) {
             // Get Asset Name and Client ID for logging and alert message
             $sql = mysqli_query($mysqli, "
                 SELECT asset_name, asset_client_id, asset_id
-                FROM asset_interfaces 
+                FROM asset_interfaces
                 LEFT JOIN assets ON asset_id = interface_asset_id
                 WHERE interface_id = $interface_id
             ");
@@ -1399,10 +1399,10 @@ if (isset($_POST['bulk_edit_asset_interface_network'])) {
         }
 
         logAction("Asset Interface", "Bulk Edit", "$session_name set network to $network_name on $interface_count interfaces for asset $asset_name", $client_id);
-        
+
         flash_alert("Network set to <strong>$network_name</strong> on <strong>$interface_count</strong> interfaces.");
     }
-        
+
         redirect();
 
 }
@@ -1412,7 +1412,7 @@ if (isset($_POST['bulk_edit_asset_interface_ip_dhcp'])) {
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 2);
-    
+
     if (isset($_POST['interface_ids'])) {
 
         // Get Count
@@ -1424,7 +1424,7 @@ if (isset($_POST['bulk_edit_asset_interface_ip_dhcp'])) {
             // Get Asset Name and Client ID for logging and alert message
             $sql = mysqli_query($mysqli, "
                 SELECT asset_name, asset_client_id, asset_id
-                FROM asset_interfaces 
+                FROM asset_interfaces
                 LEFT JOIN assets ON asset_id = interface_asset_id
                 WHERE interface_id = $interface_id
             ");
@@ -1440,11 +1440,11 @@ if (isset($_POST['bulk_edit_asset_interface_ip_dhcp'])) {
         }
 
         logAction("Asset Interface", "Bulk Edit", "$session_name set interface IP to DHCP on $interface_count interfaces for asset $asset_name", $client_id);
-        
+
         flash_alert("Interface IP set to <strong>DHCP</strong> on <strong>$interface_count</strong> interfaces.");
-    
+
     }
-    
+
     redirect();
 
 }
@@ -1485,7 +1485,7 @@ if (isset($_POST['bulk_delete_asset_interfaces'])) {
 
         flash_alert("<strong>$interface_count</strong> interfaces deleted.", 'error');
     }
-        
+
         redirect();
 
 }
@@ -1495,7 +1495,7 @@ if (isset($_POST["import_client_asset_interfaces_csv"])) {
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 2);
-    
+
     $asset_id = intval($_POST['asset_id']);
     $file_name = $_FILES["file"]["tmp_name"];
 
@@ -1597,11 +1597,11 @@ if (isset($_POST["import_client_asset_interfaces_csv"])) {
         logAction("Asset", "Import", "$session_name imported $row_count interfaces(s) to asset $asset_name via CSV file", $client_id);
 
         flash_alert("<strong>$row_count</strong> Interfaces(s) added to asset <strong>$asset_name</stong>, <strong>$duplicate_count</strong> duplicate(s) detected");
-        
+
         redirect();
-    
+
     }
-    
+
     //Check for any errors, if there are notify user and redirect
     if ($error) {
         redirect();

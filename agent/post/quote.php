@@ -555,7 +555,7 @@ if(isset($_POST['export_quotes_csv'])){
 
     enforceUserPermission('module_sales');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "WHERE quote_client_id = $client_id";
         // Get Client Name for logging

@@ -98,12 +98,14 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <?php if ($client_url) { ?>
 <!--                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#contactInviteModal"><i class="fas fa-fw fa-paper-plane mr-2"></i>Invite</a>-->
 <!--                    <div class="dropdown-divider"></div>-->
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#importContactModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                        data-modal-url="modals/contact/contact_import.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-upload mr-2"></i>Import
                     </a>
                     <div class="dropdown-divider"></div>
                     <?php } ?>
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportContactModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                        data-modal-url="modals/contact/contact_export.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-download mr-2"></i>Export
                     </a>
                 </div>
@@ -112,7 +114,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
     </div>
     <div class="card-body">
         <form autocomplete="off">
-            <?php if ($client_url) { ?> 
+            <?php if ($client_url) { ?>
             <input type="hidden" name="client_id" value="<?php echo $client_id; ?>">
             <?php } ?>
             <input type="hidden" name="archived" value="<?php echo $archived; ?>">
@@ -134,7 +136,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             <?php
                             $sql_tags_filter = mysqli_query($mysqli, "
                                 SELECT tags.tag_id, tags.tag_name
-                                FROM tags 
+                                FROM tags
                                 LEFT JOIN contact_tags ON contact_tags.tag_id = tags.tag_id
                                 LEFT JOIN contacts ON contact_tags.contact_id = contacts.contact_id
                                 WHERE tag_type = 3
@@ -163,7 +165,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             $sql_locations_filter = mysqli_query($mysqli, "
                                 SELECT DISTINCT location_id, location_name
                                 FROM locations
-                                WHERE location_client_id = $client_id 
+                                WHERE location_client_id = $client_id
                                 AND ( EXISTS (SELECT 1 FROM contacts WHERE contact_location_id = location_id  AND $archive_query) OR location_id = $location_filter)
                                 ORDER BY location_name ASC
                             ");
@@ -187,7 +189,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                             <?php
                             $sql_clients_filter = mysqli_query($mysqli, "
-                                SELECT DISTINCT client_id, client_name 
+                                SELECT DISTINCT client_id, client_name
                                 FROM clients
                                 JOIN contacts ON contact_client_id = client_id
                                 WHERE $archive_query
@@ -210,7 +212,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                 <div class="col-md-3">
                     <div class="btn-group float-right">
-                        <a href="?<?php echo $client_url; ?>archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>" 
+                        <a href="?<?php echo $client_url; ?>archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>"
                             class="btn btn-<?php if($archived == 1){ echo "primary"; } else { echo "default"; } ?>">
                             <i class="fa fa-fw fa-archive mr-2"></i>Archived
                         </a>
@@ -219,7 +221,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                 <i class="fas fa-fw fa-layer-group mr-2"></i>Bulk Action (<span id="selectedCount">0</span>)
                             </button>
                             <div class="dropdown-menu">
-                                <?php if ($client_url) { ?> 
+                                <?php if ($client_url) { ?>
                                 <a class="dropdown-item ajax-modal" href="#"
                                     data-modal-url="modals/contact/contact_bulk_assign_location.php?<?= $client_url ?>"
                                     data-bulk="true">
@@ -397,7 +399,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         $contact_user_id = intval($row['contact_user_id']);
                         if ($contact_user_id) {
                             $user_exists_display = "<span class='badge badge-pill badge-dark p-1' title='User: $auth_method'><i class='fas fa-fw fa-user'></i></span>";
-                        } else { 
+                        } else {
                             $user_exists_display = "";
                         }
 
@@ -406,25 +408,25 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         // Asset Count
                         $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT('asset_id') AS num FROM assets WHERE asset_contact_id = $contact_id AND asset_archived_at IS NULL"));
                         $asset_count = $row['num'];
-                        if ($asset_count) { 
+                        if ($asset_count) {
                             $asset_count_display = "<a href='contact_details.php?client_id=$client_id&contact_id=$contact_id#assets' class='mr-2 mb-1 badge badge-pill badge-dark p-2' title='Assets ($asset_count)'><i class='fas fa-fw fa-desktop mr-2'></i>$asset_count</a>";
                         } else {
                             $asset_count_display = '';
                         }
-                        
+
                         // Credential Count
                         $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT('credential_id') AS num FROM credentials WHERE credential_contact_id = $contact_id AND credential_archived_at IS NULL"));
                         $credential_count = $row['num'];
-                        if ($credential_count) { 
+                        if ($credential_count) {
                             $credential_count_display = "<a href='contact_details.php?client_id=$client_id&contact_id=$contact_id#credentials' class='mr-2 mb-1 badge badge-pill badge-secondary p-2' title='Credentials ($credential_count)'><i class='fas fa-fw fa-key mr-2'></i>$credential_count</a>";
                         } else {
                             $credential_count_display = '';
                         }
-                        
+
                         // Software Count
                         $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT('software_id') AS num FROM software, software_contacts WHERE software.software_id = software_contacts.software_id AND software_contacts.contact_id = $contact_id AND software_archived_at IS NULL"));
                         $software_count = $row['num'];
-                        if ($software_count) { 
+                        if ($software_count) {
                             $software_count_display = "<a href='contact_details.php?client_id=$client_id&contact_id=$contact_id#software' class='mr-2 mb-1 badge badge-pill badge-secondary p-2' title='Licenses ($software_count)'><i class='fas fa-fw fa-cube mr-2'></i>$software_count</a>";
                         } else {
                             $software_count_display = '';
@@ -433,7 +435,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         // Ticket Count
                         $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT('ticket_id') AS num FROM tickets WHERE ticket_contact_id = $contact_id AND ticket_archived_at IS NULL"));
                         $ticket_count = $row['num'];
-                        if ($ticket_count) { 
+                        if ($ticket_count) {
                             $ticket_count_display = "<a href='contact_details.php?client_id=$client_id&contact_id=$contact_id#tickets' class='mr-2 mb-1 badge badge-pill badge-secondary p-2' title='Tickets ($ticket_count)'><i class='fas fa-fw fa-life-ring mr-2'></i>$ticket_count</a>";
                         } else {
                             $ticket_count_display = '';
@@ -491,11 +493,11 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                                 <div class="mt-1">
                                                     <?php echo $contact_tags_display; ?>
                                                 </div>
-                                            <?php } ?>   
+                                            <?php } ?>
                                         </div>
                                     </div>
                                 </a>
-                                
+
                             </td>
                             <td><?php echo $contact_department; ?></td>
                             <td><?php echo $contact_info_display; ?></td>
@@ -566,10 +568,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-
-require_once "modals/contact/contact_export.php";
-if ($client_url) {
-    //require_once "modals/contact/contact_invite.php";
-    require_once "modals/contact/contact_import.php";
-}
 require_once "../includes/footer.php";

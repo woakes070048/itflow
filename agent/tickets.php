@@ -105,7 +105,7 @@ $sql = mysqli_query(
     $ticket_permission_snippet
     $client_query
     ORDER BY
-        CASE 
+        CASE
             WHEN '$sort' = 'ticket_priority' THEN
                 CASE ticket_priority
                     WHEN 'High' THEN 1
@@ -114,7 +114,7 @@ $sql = mysqli_query(
                     ELSE 4  -- Optional: for unexpected priority values
                 END
             ELSE NULL
-        END $order, 
+        END $order,
         $sort $order  -- Apply normal sorting by $sort and $order
     LIMIT $record_from, $record_to"
 );
@@ -161,8 +161,8 @@ $sql_categories_filter = mysqli_query(
         <div class="card-header py-2">
             <h3 class="card-title mt-2"><i class="fa fa-fw fa-life-ring mr-2"></i>Tickets
                 <small class="ml-3">
-                    <a href="?<?php echo $client_url; ?>status=Open" class="badge badge-pill text-light p-1 <?php if($status == 'Open') { echo "badge-light text-dark"; } ?>"><strong><?php echo $total_tickets_open; ?></strong> Open</a> |
-                    <a href="?<?php echo $client_url; ?>status=Closed" class="badge badge-pill text-light p-1 <?php if($status == 'Closed') { echo "badge-light text-dark"; } ?>"><strong><?php echo $total_tickets_closed; ?></strong> Closed</a>
+                    <a href="?<?= $client_url ?>status=Open" class="badge badge-pill text-light p-1 <?php if($status == 'Open') { echo "badge-light text-dark"; } ?>"><strong><?= $total_tickets_open ?></strong> Open</a> |
+                    <a href="?<?= $client_url ?>status=Closed" class="badge badge-pill text-light p-1 <?php if($status == 'Closed') { echo "badge-light text-dark"; } ?>"><strong><?= $total_tickets_closed ?></strong> Closed</a>
                 </small>
             </h3>
             <?php if (lookupUserPermission("module_support") >= 2) { ?>
@@ -174,7 +174,8 @@ $sql_categories_filter = mysqli_query(
                         <?php if ($num_rows[0] > 0) { ?>
                         <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportTicketModal">
+                            <a class="dropdown-item text-dark ajax-modal" href="#"
+                                data-modal-url="modals/ticket/ticket_export.php?<?= $client_url ?>">
                                 <i class="fa fa-fw fa-download mr-2"></i>Export
                             </a>
                         </div>
@@ -186,9 +187,9 @@ $sql_categories_filter = mysqli_query(
         <div class="card-body">
             <form autocomplete="off">
                 <?php if ($client_url) { ?>
-                    <input type="hidden" name="client_id" value="<?php echo $client_id; ?>">
+                    <input type="hidden" name="client_id" value="<?= $client_id ?>">
                 <?php } ?>
-                <input type="hidden" name="status" value="<?php echo $status; ?>">
+                <input type="hidden" name="status" value="<?= $status ?>">
                 <div class="row">
                     <div class="col-sm-4">
                         <div class="input-group mb-3 mb-sm-0">
@@ -220,7 +221,7 @@ $sql_categories_filter = mysqli_query(
                                     ?>
 
                                 </select>
-                                
+
                             </div>
                         </div>
                     </div>
@@ -261,44 +262,44 @@ $sql_categories_filter = mysqli_query(
                                         <i class="fas fa-fw fa-layer-group mr-2"></i>Bulk Action (<span id="selectedCount">0</span>)
                                     </button>
                                     <div class="dropdown-menu">
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/ticket/ticket_bulk_assign.php"
                                             data-bulk="true">
                                             <i class="fas fa-fw fa-user-check mr-2"></i>Assign Agent
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/ticket/ticket_bulk_edit_category.php"
                                             data-bulk="true">
                                             <i class="fas fa-fw fa-layer-group mr-2"></i>Set Category
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/ticket/ticket_bulk_edit_priority.php"
                                             data-bulk="true">
                                             <i class="fas fa-fw fa-thermometer-half mr-2"></i>Set Priority
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/ticket/ticket_bulk_reply.php"
                                             data-modal-size="lg"
                                             data-bulk="true">
                                             <i class="fas fa-fw fa-paper-plane mr-2"></i>Update/Reply
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/ticket/ticket_bulk_add_project.php"
                                             data-bulk="true">
                                             <i class="fas fa-fw fa-project-diagram mr-2"></i>Set Project
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/ticket/ticket_bulk_merge.php"
                                             data-bulk="true">
                                             <i class="fas fa-fw fa-clone mr-2"></i>Merge
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/ticket/ticket_bulk_resolve.php"
                                             data-modal-size="lg"
                                             data-bulk="true">
@@ -407,5 +408,4 @@ if (isset($_GET["view"])) {
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-require_once "modals/ticket/ticket_export.php";
 require_once "../includes/footer.php";

@@ -85,7 +85,7 @@ if (isset($_POST['edit_vendor'])) {
 }
 
 if (isset($_GET['archive_vendor'])) {
-    
+
     $vendor_id = intval($_GET['archive_vendor']);
 
     //Get Vendor Name
@@ -125,7 +125,7 @@ if(isset($_GET['unarchive_vendor'])){
 }
 
 if (isset($_GET['delete_vendor'])) {
-    
+
     $vendor_id = intval($_GET['delete_vendor']);
 
     //Get Vendor Name
@@ -153,7 +153,7 @@ if (isset($_GET['delete_vendor'])) {
 if (isset($_POST['bulk_archive_vendors'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-    
+
     validateAdminRole();
 
     if (isset($_POST['vendor_ids'])) {
@@ -190,7 +190,7 @@ if (isset($_POST['bulk_archive_vendors'])) {
 if (isset($_POST['bulk_unarchive_vendors'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-    
+
     validateAdminRole();
 
     if (isset($_POST['vendor_ids'])) {
@@ -226,11 +226,11 @@ if (isset($_POST['bulk_unarchive_vendors'])) {
 }
 
 if (isset($_POST['bulk_delete_vendors'])) {
-    
+
     validateCSRFToken($_POST['csrf_token']);
 
     validateAdminRole();
-    
+
     if (isset($_POST['vendor_ids'])) {
 
         // Get Selected Count
@@ -260,7 +260,7 @@ if (isset($_POST['bulk_delete_vendors'])) {
         }
 
         logAction("Vendor", "Bulk Delete", "$session_name deleted $count vendor(s)");
-        
+
         flash_alert("Deleted <strong>$count</strong> vendor(s)", 'error');
 
     }
@@ -270,20 +270,20 @@ if (isset($_POST['bulk_delete_vendors'])) {
 }
 
 if (isset($_POST['export_vendors_csv'])) {
-    
-    if (isset($_POST['client_id'])) {
+
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
-        $client_query = "AND vendor_client_id = $client_id";
+        $client_query = "WHERE vendor_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
         $file_name_prepend = "$client_name-";
     } else {
-        $client_query = "AND vendor_client_id = 0";
+        $client_query = "WHERE vendor_client_id = 0";
         $client_name = '';
         $file_name_prepend = "$session_company_name-";
     }
 
-    $sql = mysqli_query($mysqli,"SELECT * FROM vendors WHERE vendor_template = 0 $client_query ORDER BY vendor_name ASC");
-    
+    $sql = mysqli_query($mysqli,"SELECT * FROM vendors $client_query ORDER BY vendor_name ASC");
+
     $count = mysqli_num_rows($sql);
 
     if ($count > 0) {
@@ -319,5 +319,5 @@ if (isset($_POST['export_vendors_csv'])) {
     logAction("Vendor", "Export", "$session_name exported $count vendor(s) to a CSV file");
 
     exit;
-    
+
 }

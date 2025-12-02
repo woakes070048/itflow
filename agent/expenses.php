@@ -67,7 +67,8 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <button type="button" class="btn btn-primary ajax-modal" data-modal-url="modals/expense/expense_add.php" data-modal-size="lg"><i class="fas fa-plus mr-2"></i>New Expense</button>
                     <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportExpensesModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/expense/expense_export.php">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     </div>
@@ -357,5 +358,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 <script src="/js/bulk_actions.js"></script>
 
 <?php
-require_once "modals/expense/expense_export.php";
 require_once "../includes/footer.php";

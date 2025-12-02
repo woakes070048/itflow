@@ -229,7 +229,7 @@ if (isset($_POST['bulk_assign_location_tags'])) {
         logAction("Location", "Bulk Edit", "$session_name assigned tags to $count location(s)", $client_id);
 
         flash_alert("Assigned tags for <strong>$count</strong> locations");
-    
+
     }
 
     redirect();
@@ -237,7 +237,7 @@ if (isset($_POST['bulk_assign_location_tags'])) {
 }
 
 if (isset($_POST['bulk_archive_locations'])) {
-    
+
     enforceUserPermission('module_client', 2);
     validateCSRFToken($_POST['csrf_token']);
 
@@ -262,7 +262,7 @@ if (isset($_POST['bulk_archive_locations'])) {
 
                 // Individual Contact logging
                 logAction("Location", "Archive", "$session_name archived location $location_name", $client_id, $location_id);
-                
+
                 $count++;
             }
 
@@ -279,10 +279,10 @@ if (isset($_POST['bulk_archive_locations'])) {
 }
 
 if (isset($_POST['bulk_unarchive_locations'])) {
-    
+
     validateCSRFToken($_POST['csrf_token']);
 
-    enforceUserPermission('module_client', 2);   
+    enforceUserPermission('module_client', 2);
 
     if (isset($_POST['location_ids'])) {
 
@@ -339,7 +339,7 @@ if (isset($_POST['bulk_delete_locations'])) {
             $client_id = intval($row['location_client_id']);
 
             mysqli_query($mysqli, "DELETE FROM locations WHERE location_id = $location_id AND location_client_id = $client_id");
-            
+
             logAction("Location", "Delete", "$session_name deleted location $location_name", $client_id);
 
         }
@@ -355,8 +355,8 @@ if (isset($_POST['bulk_delete_locations'])) {
 }
 
 if(isset($_POST['export_locations_csv'])){
-    
-    if (isset($_POST['client_id'])) {
+
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND location_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
@@ -494,14 +494,14 @@ if (isset($_POST["import_locations_csv"])) {
         logAction("Location", "Import", "$session_name imported $row_count location(s). $duplicate_count duplicate(s) found and not imported", $client_id);
 
         flash_alert("$row_count Location(s) imported, $duplicate_count duplicate(s) detected and not imported");
-        
+
         redirect();
     }
     //Check for any errors, if there are notify user and redirect
     if($error) {
         redirect();
     }
-    
+
 }
 
 if(isset($_GET['download_locations_csv_template'])){

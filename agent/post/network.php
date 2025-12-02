@@ -86,7 +86,7 @@ if (isset($_GET['unarchive_network'])) {
 }
 
 if (isset($_GET['delete_network'])) {
-    
+
     enforceUserPermission('module_support', 3);
 
     $network_id = intval($_GET['delete_network']);
@@ -110,7 +110,7 @@ if (isset($_GET['delete_network'])) {
 if (isset($_POST['bulk_delete_networks'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-    
+
     enforceUserPermission('module_support', 3);
 
     if (isset($_POST['network_ids'])) {
@@ -130,7 +130,7 @@ if (isset($_POST['bulk_delete_networks'])) {
             $client_id = intval($row['network_client_id']);
 
             mysqli_query($mysqli, "DELETE FROM networks WHERE network_id = $network_id AND network_client_id = $client_id");
-            
+
             logAction("Network", "Delete", "$session_name deleted network $network_name", $client_id);
 
         }
@@ -149,7 +149,7 @@ if (isset($_POST['export_networks_csv'])) {
 
     enforceUserPermission('module_support', 2);
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND network_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');

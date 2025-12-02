@@ -638,13 +638,13 @@ if (isset($_POST['export_invoices_csv'])) {
 
     enforceUserPermission('module_sales');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
-        $client_query = "AND invoice_client_id = $client_id";
+        $client_query = "1=1 AND invoice_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
         $file_name_prepend = "$client_name-";
     } else {
-        $client_query = '';
+        $client_query = '1=1 ';
         $client_name = '';
         $file_name_prepend = "$session_company_name-";
     }

@@ -180,7 +180,7 @@ if (isset($_POST['bulk_assign_credential_tags'])) {
         } // End Assign Loop
 
         logAction("Credential", "Bulk Edit", "$session_name added tags to $count credentials", $client_id);
-    
+
     }
 
     redirect();
@@ -226,7 +226,7 @@ if (isset($_POST['bulk_archive_credentials'])) {
 
 if (isset($_POST['bulk_unarchive_credentials'])) {
 
-    validateCSRFToken($_POST['csrf_token']);    
+    validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_credential', 2);
 
@@ -304,7 +304,7 @@ if (isset($_POST['export_credentials_csv'])) {
 
     enforceUserPermission('module_credential');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND credential_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
@@ -443,14 +443,14 @@ if (isset($_POST["import_credentials_csv"])) {
         logAction("Credential", "Import", "$session_name imported $row_count credential(s) via CSV file. $duplicate_count duplicate(s) found and not imported", $client_id);
 
         flash_alert("<strong>$row_count</strong> credential(s) imported, <strong>$duplicate_count</strong> duplicate(s) detected and not imported", 'warning');
-        
+
         redirect();
     }
     //Check for any errors, if there are notify user and redirect
     if ($error) {
         redirect();
     }
-    
+
 }
 
 if (isset($_GET['download_credentials_csv_template'])) {

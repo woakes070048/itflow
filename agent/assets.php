@@ -92,7 +92,7 @@ if (isset($_GET['tags']) && is_array($_GET['tags']) && !empty($_GET['tags'])) {
 
 //Get Asset Counts
 $row = mysqli_fetch_assoc(mysqli_query($mysqli, "
-    SELECT 
+    SELECT
         COUNT(*) AS all_count,
         SUM(CASE WHEN asset_type IN ('laptop', 'desktop') THEN 1 ELSE 0 END) AS workstation_count,
         SUM(CASE WHEN asset_type = 'server' THEN 1 ELSE 0 END) AS server_count,
@@ -102,8 +102,8 @@ $row = mysqli_fetch_assoc(mysqli_query($mysqli, "
     FROM (
         SELECT assets.* FROM assets
         LEFT JOIN clients ON client_id = asset_client_id
-        LEFT JOIN contacts ON asset_contact_id = contact_id 
-        LEFT JOIN locations ON asset_location_id = location_id 
+        LEFT JOIN contacts ON asset_contact_id = contact_id
+        LEFT JOIN locations ON asset_location_id = location_id
         LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
         LEFT JOIN asset_tags ON asset_tag_asset_id = asset_id
         LEFT JOIN tags ON tag_id = asset_tag_tag_id
@@ -137,8 +137,8 @@ $sql = mysqli_query(
     $mysqli,
     "SELECT SQL_CALC_FOUND_ROWS * FROM assets
     LEFT JOIN clients ON asset_client_id = client_id
-    LEFT JOIN contacts ON asset_contact_id = contact_id 
-    LEFT JOIN locations ON asset_location_id = location_id 
+    LEFT JOIN contacts ON asset_contact_id = contact_id
+    LEFT JOIN locations ON asset_location_id = location_id
     LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
     LEFT JOIN asset_tags ON asset_tag_asset_id = asset_id
     LEFT JOIN tags ON tag_id = asset_tag_tag_id
@@ -200,14 +200,16 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                 <div class="dropdown-menu">
                     <?php if ($client_url) { ?>
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#importAssetModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                        data-modal-url="modals/asset/asset_import.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-upload mr-2"></i>Import
                     </a>
                     <div class="dropdown-divider"></div>
                     <?php } ?>
                     <?php if ($num_rows[0] > 0) { ?>
 
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportAssetModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/asset/asset_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     <?php } ?>
@@ -242,7 +244,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             $sql_locations_filter = mysqli_query($mysqli, "
                                 SELECT DISTINCT location_id, location_name
                                 FROM locations
-                                WHERE location_client_id = $client_id 
+                                WHERE location_client_id = $client_id
                                 AND ( EXISTS (SELECT 1 FROM assets WHERE asset_location_id = location_id  AND $archive_query) OR location_id = $location_filter)
                                 ORDER BY location_name ASC
                             ");
@@ -266,7 +268,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                             <?php
                             $sql_clients_filter = mysqli_query($mysqli, "
-                                SELECT DISTINCT client_id, client_name 
+                                SELECT DISTINCT client_id, client_name
                                 FROM clients
                                 JOIN assets ON asset_client_id = client_id
                                 WHERE $archive_query
@@ -463,7 +465,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                     IP <?php if ($sort == 'interface_ip') { echo $order_icon; } ?>
                                 </a>
                             </th>
-                        <?php if (isset($_GET['show_column']) && is_array($_GET['show_column']) && in_array('Mac_Address', $_GET['show_column'])) { ?> 
+                        <?php if (isset($_GET['show_column']) && is_array($_GET['show_column']) && in_array('Mac_Address', $_GET['show_column'])) { ?>
                             <th>
                                 <a class="text-secondary" href="?<?php echo $url_query_strings_sort; ?>&sort=interface_mac&order=<?php echo $disp; ?>">
                                     MAC Address <?php if ($sort == 'interface_mac') { echo $order_icon; } ?>
@@ -605,7 +607,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         }
                         $contact_name = nullable_htmlentities($row['contact_name']);
                         if ($contact_name) {
-                            $contact_name_display = "<a class='ajax-modal' href='#' data-modal-url='modals/contact/contact_details.php?id=$asset_contact_id' data-modal-size='lg'>$contact_name $contact_archive_display</a>";    
+                            $contact_name_display = "<a class='ajax-modal' href='#' data-modal-url='modals/contact/contact_details.php?id=$asset_contact_id' data-modal-size='lg'>$contact_name $contact_archive_display</a>";
                         } else {
                             $contact_name_display = "-";
                         }
@@ -665,7 +667,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                                 <div class="mt-1">
                                                     <?= $asset_tags_display ?>
                                                 </div>
-                                            <?php } ?>   
+                                            <?php } ?>
                                         </div>
                                     </div>
                                 </a>
@@ -789,8 +791,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-require_once "modals/asset/asset_export.php";
-if ($client_url) {
-    require_once "modals/asset/asset_import.php";
-}
 require_once "../includes/footer.php";

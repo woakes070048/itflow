@@ -84,12 +84,14 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 </button>
                 <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                 <div class="dropdown-menu">
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#importLocationModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                        data-modal-url="modals/location/location_import.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-upload mr-2"></i>Import
                     </a>
                     <?php if ($num_rows[0] > 0) { ?>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportLocationModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/location/location_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     <?php } ?>
@@ -403,7 +405,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-
-require_once "modals/location/location_import.php";
-require_once "modals/location/location_export.php";
 require_once "../includes/footer.php";
