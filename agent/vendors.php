@@ -19,7 +19,7 @@ $sql = mysqli_query(
     $mysqli,
     "SELECT SQL_CALC_FOUND_ROWS * FROM vendors
     LEFT JOIN clients ON client_id = vendor_client_id
-    LEFT JOIN vendor_templates ON vendors.vendor_template_id = vendor_templates.vendor_template_id 
+    LEFT JOIN vendor_templates ON vendors.vendor_template_id = vendor_templates.vendor_template_id
     WHERE vendor_$archive_query
     AND (vendor_name LIKE '%$q%' OR vendor_description LIKE '%$q%' OR vendor_account_number LIKE '%$q%' OR vendor_website LIKE '%$q%' OR vendor_contact_name LIKE '%$q%' OR vendor_email LIKE '%$q%' OR vendor_phone LIKE '%$phone_query%')
     $client_query
@@ -43,12 +43,14 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 </button>
                 <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                 <div class="dropdown-menu">
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#addVendorFromTemplateModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                        data-modal-url="modals/vendor/vendor_add_from_template.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-puzzle-piece mr-2"></i>Create from Template
                     </a>
                     <?php if ($num_rows[0] > 0) { ?>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportVendorModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/vendor/vendor_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     <?php } ?>
@@ -267,7 +269,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         </tr>
 
                         <?php
-                    } 
+                    }
 
                     ?>
 
@@ -283,6 +285,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-require_once "modals/vendor/vendor_add_from_template.php";
-require_once "modals/vendor/vendor_export.php";
 require_once "../includes/footer.php";

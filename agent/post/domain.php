@@ -212,11 +212,11 @@ if (isset($_GET['delete_domain'])) {
 }
 
 if (isset($_POST['bulk_archive_domains'])) {
-    
+
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 3);
-    
+
     if (isset($_POST['domain_ids'])) {
 
         // Get Selected Count
@@ -249,7 +249,7 @@ if (isset($_POST['bulk_archive_domains'])) {
 }
 
 if (isset($_POST['bulk_unarchive_domains'])) {
-    
+
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 3);
@@ -287,11 +287,11 @@ if (isset($_POST['bulk_unarchive_domains'])) {
 }
 
 if (isset($_POST['bulk_delete_domains'])) {
-    
+
     validateCSRFToken($_POST['csrf_token']);
 
     enforceUserPermission('module_support', 3);
-    
+
     if (isset($_POST['domain_ids'])) {
 
         // Get Selected Count
@@ -327,7 +327,7 @@ if (isset($_POST['export_domains_csv'])) {
 
     enforceUserPermission('module_support');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "WHERE domain_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');

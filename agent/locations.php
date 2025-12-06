@@ -84,12 +84,14 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 </button>
                 <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                 <div class="dropdown-menu">
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#importLocationModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                        data-modal-url="modals/location/location_import.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-upload mr-2"></i>Import
                     </a>
                     <?php if ($num_rows[0] > 0) { ?>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportLocationModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/location/location_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     <?php } ?>
@@ -119,8 +121,8 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <select onchange="this.form.submit()" class="form-control select2" name="tags[]" data-placeholder="- Select Tags -" multiple>
                             <?php
                             $sql_tags_filter = mysqli_query($mysqli, "
-                                SELECT tags.tag_id, tags.tag_name, tag_type 
-                                FROM tags 
+                                SELECT tags.tag_id, tags.tag_name, tag_type
+                                FROM tags
                                 LEFT JOIN location_tags ON location_tags.tag_id = tags.tag_id
                                 LEFT JOIN locations ON location_tags.location_id = locations.location_id
                                 WHERE tag_type = 2
@@ -148,7 +150,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                             <?php
                             $sql_clients_filter = mysqli_query($mysqli, "
-                                SELECT DISTINCT client_id, client_name 
+                                SELECT DISTINCT client_id, client_name
                                 FROM clients
                                 JOIN locations ON location_client_id = client_id
                                 WHERE $archive_query
@@ -403,7 +405,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-
-require_once "modals/location/location_import.php";
-require_once "modals/location/location_export.php";
 require_once "../includes/footer.php";

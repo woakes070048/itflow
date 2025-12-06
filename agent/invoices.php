@@ -162,10 +162,14 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
         <h3 class="card-title mt-2"><i class="fa fa-fw fa-file-invoice mr-2"></i>Invoices</h3>
         <div class="card-tools">
             <div class="btn-group">
-                <button type="button" class="btn btn-primary ajax-modal" data-modal-url="modals/invoice/invoice_add.php?<?= $client_url ?>"><i class="fas fa-plus mr-2"></i>New Invoice</button>
+                <button type="button" class="btn btn-primary ajax-modal"
+                    data-modal-url="modals/invoice/invoice_add.php?<?= $client_url ?>">
+                    <i class="fas fa-plus mr-2"></i>New Invoice
+                </button>
                 <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                 <div class="dropdown-menu">
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportInvoicesModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                         data-modal-url="modals/invoice/invoice_export.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-download mr-2"></i>Export
                     </a>
                 </div>
@@ -217,7 +221,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                 <i class="fas fa-fw fa-layer-group mr-2"></i>Bulk Action (<span id="selectedCount">0</span>)
                             </button>
                             <div class="dropdown-menu">
-                                <?php if ($client_url && $balance > 0) { ?> 
+                                <?php if ($client_url && $balance > 0) { ?>
                                     <a class="dropdown-item ajax-modal" href="#"
                                         data-modal-url="modals/payment/payment_bulk_add.php?<?= $client_url ?>">
                                         <i class="fa fa-credit-card mr-2"></i>Batch Payment
@@ -357,7 +361,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         // Saved Payment Methods
                         $sql_saved_payment_methods = mysqli_query($mysqli, "
                             SELECT * FROM client_saved_payment_methods
-                            LEFT JOIN payment_providers 
+                            LEFT JOIN payment_providers
                                 ON client_saved_payment_methods.saved_payment_provider_id = payment_providers.payment_provider_id
                             WHERE saved_payment_client_id = $client_id
                             AND payment_provider_active = 1;
@@ -453,5 +457,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-require_once "modals/invoice/invoice_export.php";
 require_once "../includes/footer.php";

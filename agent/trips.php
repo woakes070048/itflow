@@ -15,9 +15,6 @@ if (isset($_GET['client_id'])) {
     $client_url = '';
 }
 
-//Rebuild URL
-$url_query_strings_sort = http_build_query($get_copy);
-
 $sql = mysqli_query(
     $mysqli,
     "SELECT SQL_CALC_FOUND_ROWS * FROM trips
@@ -40,12 +37,15 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
             <div class="card-tools">
                 <div class="btn-group">
                     <button type="button" class="btn btn-primary ajax-modal" data-modal-url="modals/trip/trip_add.php?<?= $client_url ?>"><i class="fas fa-plus mr-2"></i>New Trip</button>
+                    <?php if ($num_rows[0] > 0) { ?>
                     <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportTripsModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/trip/trip_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     </div>
+                    <?php } ?>
                 </div>
             </div>
         </div>
@@ -188,7 +188,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                             <i class="fa fa-fw fa-map-marker-alt mr-2"></i>Map it<i class="fa fa-fw fa-external-link-alt ml-2"></i>
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item ajax-modal" href="#" 
+                                        <a class="dropdown-item ajax-modal" href="#"
                                             data-modal-url="modals/trip/trip_edit.php?<?= $client_url ?>&id=<?= $trip_id ?>">
                                             <i class="fa fa-fw fa-edit mr-2"></i>Edit
                                         </a>
@@ -218,5 +218,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
     </div>
 
 <?php
-require_once "modals/trip/trip_export.php";
 require_once "../includes/footer.php";

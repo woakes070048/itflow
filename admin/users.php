@@ -33,9 +33,16 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <div class="dropdown-menu">
                     <!--<a class="dropdown-item text-dark ajax-modal" href="#" data-modal-url="modals/user/user_invite.php"><i class="fas fa-paper-plane mr-2"></i>Invite User</a>-->
                     <?php if ($num_rows[0] > 1) { ?>
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportUserModal"><i class="fa fa-fw fa-download mr-2"></i>Export</a>
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/user/user_export.php">
+                            <i class="fa fa-fw fa-download mr-2"></i>Export
+                        </a>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item text-danger ajax-modal" href="#" data-modal-url="modals/user/user_all_reset_password.php" data-modal-size="lg"><i class="fas fa-skull-crossbones mr-2"></i>IR</a>
+                        <a class="dropdown-item text-danger ajax-modal" href="#"
+                            data-modal-url="modals/user/user_all_reset_password.php"
+                            data-modal-size="lg">
+                            <i class="fas fa-skull-crossbones mr-2"></i>IR
+                        </a>
                     <?php } ?>
                 </div>
             </div>
@@ -54,7 +61,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 </div>
                 <div class="col-md-8">
                     <div class="btn-group float-right">
-                        <a href="?archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>" 
+                        <a href="?archived=<?php if($archived == 1){ echo 0; } else { echo 1; } ?>"
                             class="btn btn-<?php if($archived == 1){ echo "primary"; } else { echo "default"; } ?>">
                             <i class="fa fa-fw fa-archive mr-2"></i>Archived
                         </a>
@@ -235,5 +242,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 </div>
 
 <?php
-require_once "modals/user/user_export.php";
 require_once "../includes/footer.php";

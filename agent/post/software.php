@@ -208,7 +208,7 @@ if (isset($_POST['export_software_csv'])) {
 
     enforceUserPermission('module_support');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "WHERE software_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
@@ -243,7 +243,7 @@ if (isset($_POST['export_software_csv'])) {
 
             // Asset licenses
             $assigned_to_assets = '';
-            $asset_licenses_sql = mysqli_query($mysqli,"SELECT software_assets.asset_id, assets.asset_name 
+            $asset_licenses_sql = mysqli_query($mysqli,"SELECT software_assets.asset_id, assets.asset_name
                 FROM software_assets
                 LEFT JOIN assets
                     ON software_assets.asset_id = assets.asset_id
@@ -261,7 +261,7 @@ if (isset($_POST['export_software_csv'])) {
                   ON software_contacts.contact_id = contacts.contact_id
                 WHERE software_id = $row[software_id]"
             );
-            
+
             while($contact_row = mysqli_fetch_array($contact_licenses_sql)) {
                 $assigned_to_contacts .= $contact_row['contact_name'] . ", ";
             }
@@ -280,7 +280,7 @@ if (isset($_POST['export_software_csv'])) {
         //output all remaining data on a file pointer
         fpassthru($f);
     }
-    
+
     logAction("Software", "Export", "$session_name exported $num_rows software(s) $software_name to a CSV file", $client_id);
 
     exit;

@@ -16,9 +16,22 @@ if (isset($_POST['add_document'])) {
     $asset_id = intval($_POST['asset'] ?? 0);
 
     // Document add query
-    mysqli_query($mysqli,"INSERT INTO documents SET document_name = '$name', document_description = '$description', document_content = '$content', document_content_raw = '$content_raw', document_folder_id = $folder, document_created_by = $session_user_id, document_client_id = $client_id");
+    mysqli_query($mysqli,"INSERT INTO documents SET document_name = '$name', document_description = '$description', document_content = '', document_content_raw = '$content_raw', document_folder_id = $folder, document_created_by = $session_user_id, document_client_id = $client_id");
     
     $document_id = mysqli_insert_id($mysqli);
+
+    $processed_content = mysqli_escape_string(
+        $mysqli,
+        saveBase64Images(
+            $_POST['content'],
+            $_SERVER['DOCUMENT_ROOT'] . "/uploads/documents/",
+            "uploads/documents/",
+            $document_id
+        )
+    );
+
+    // Document update content
+    mysqli_query($mysqli,"UPDATE documents SET document_content = '$processed_content' WHERE document_id = $document_id");
 
     if ($contact_id) {
         mysqli_query($mysqli,"INSERT INTO contact_documents SET contact_id = $contact_id, document_id = $document_id");
@@ -38,36 +51,82 @@ if (isset($_POST['add_document'])) {
 
 if (isset($_POST['add_document_from_template'])) {
 
-    // ROLE Check
     enforceUserPermission('module_support', 2);
 
-    // GET POST Data
-    $client_id = intval($_POST['client_id']);
-    $document_name = sanitizeInput($_POST['name']);
-    $document_description = sanitizeInput($_POST['description']);
-    $document_template_id = intval($_POST['document_template_id']);
-    $folder = intval($_POST['folder']);
+    $client_id             = intval($_POST['client_id']);
+    $document_name         = sanitizeInput($_POST['name']);
+    $document_description  = sanitizeInput($_POST['description']);
+    $document_template_id  = intval($_POST['document_template_id']);
+    $folder                = intval($_POST['folder']);
 
-    // GET Document Template Info
-    $sql_document = mysqli_query($mysqli,"SELECT * FROM document_templates WHERE document_template_id = $document_template_id");
+    // Get template
+    $sql_document = mysqli_query(
+        $mysqli,
+        "SELECT * FROM document_templates 
+         WHERE document_template_id = $document_template_id"
+    );
 
     $row = mysqli_fetch_array($sql_document);
 
     $document_template_name = sanitizeInput($row['document_template_name']);
-    $content = mysqli_real_escape_string($mysqli,$row['document_template_content']);
-    $content_raw = sanitizeInput($_POST['name'] . " " . str_replace("<", " <", $row['document_content']));
+    $template_content_html  = $row['document_template_content']; // raw HTML from template
 
-    // Document add query
-    mysqli_query($mysqli,"INSERT INTO documents SET document_name = '$document_name', document_description = '$document_description', document_content = '$content', document_content_raw = '$content_raw', document_folder_id = $folder, document_created_by = $session_user_id, document_client_id = $client_id");
+    // 1) Create the new document with placeholder content to get an ID
+    mysqli_query(
+        $mysqli,
+        "INSERT INTO documents SET
+            document_name        = '$document_name',
+            document_description = '$document_description',
+            document_content     = '',
+            document_content_raw = '',
+            document_folder_id   = $folder,
+            document_created_by  = $session_user_id,
+            document_client_id   = $client_id"
+    );
 
     $document_id = mysqli_insert_id($mysqli);
 
-    logAction("Document", "Create", "$session_name created document $name from template $document_template_name", $client_id, $document_id);
+    // 2) Copy template images to the document's folder
+    $templateFsPath = $_SERVER['DOCUMENT_ROOT'] . "/uploads/document_templates/" . $document_template_id;
+    $documentFsPath = $_SERVER['DOCUMENT_ROOT'] . "/uploads/documents/" . $document_id;
+
+    copyDirectory($templateFsPath, $documentFsPath);
+
+    // 3) Rewrite image paths in the HTML
+    //    /uploads/document_templates/{template_id}/ -> /uploads/documents/{document_id}/
+    $oldPath = "/uploads/document_templates/" . $document_template_id . "/";
+    $newPath = "/uploads/documents/" . $document_id . "/";
+
+    $processed_html = str_replace($oldPath, $newPath, $template_content_html);
+
+    // 4) Prepare content + content_raw
+    $content = mysqli_real_escape_string($mysqli, $processed_html);
+
+    $content_raw = sanitizeInput(
+        $document_name . " " . str_replace("<", " <", $processed_html)
+    );
+    $content_raw = mysqli_real_escape_string($mysqli, $content_raw);
+
+    // 5) Update the document with final content
+    mysqli_query(
+        $mysqli,
+        "UPDATE documents SET
+            document_content     = '$content',
+            document_content_raw = '$content_raw'
+         WHERE document_id = $document_id"
+    );
+
+    logAction(
+        "Document",
+        "Create",
+        "$session_name created document $document_name from template $document_template_name",
+        $client_id,
+        $document_id
+    );
 
     flash_alert("Document <strong>$document_name</strong> created from template");
 
     redirect("document_details.php?client_id=$client_id&document_id=$document_id");
-
 }
 
 if (isset($_POST['edit_document'])) {
@@ -75,22 +134,26 @@ if (isset($_POST['edit_document'])) {
     enforceUserPermission('module_support', 2);
 
     require_once 'document_model.php';
+
     $document_id = intval($_POST['document_id']);
 
-    // Save Original Document as a Version
-    $sql_original_document = mysqli_query($mysqli, "SELECT * FROM documents 
-        WHERE document_client_id = $client_id AND document_id = $document_id"
+    // 1) Load the current document to create a version
+    $sql_original_document = mysqli_query(
+        $mysqli,
+        "SELECT * FROM documents
+         WHERE document_client_id = $client_id
+           AND document_id = $document_id"
     );
 
     $row = mysqli_fetch_array($sql_original_document);
 
-    $original_document_name = sanitizeInput($row['document_name']);
+    $original_document_name        = sanitizeInput($row['document_name']);
     $original_document_description = sanitizeInput($row['document_description']);
-    $original_document_content = mysqli_escape_string($mysqli, $row['document_content']);
-    $original_document_created_by = intval($row['document_created_by']);
-    $original_document_updated_by = intval($row['document_updated_by']);
-    $original_document_created_at = sanitizeInput($row['document_created_at']);
-    $original_document_updated_at = sanitizeInput($row['document_updated_at']);
+    $original_document_content     = mysqli_real_escape_string($mysqli, $row['document_content']);
+    $original_document_created_by  = intval($row['document_created_by']);
+    $original_document_updated_by  = intval($row['document_updated_by']);
+    $original_document_created_at  = sanitizeInput($row['document_created_at']);
+    $original_document_updated_at  = sanitizeInput($row['document_updated_at']);
 
     if ($original_document_updated_at) {
         $document_version_created_at = $original_document_updated_at;
@@ -104,19 +167,66 @@ if (isset($_POST['edit_document'])) {
         $document_version_created_by = $original_document_created_by;
     }
 
-    // Document add query
-    mysqli_query($mysqli,"INSERT INTO document_versions SET document_version_name = '$original_document_name', document_version_description = '$original_document_description', document_version_content = '$original_document_content', document_version_created_by = $document_version_created_by, document_version_created_at = '$document_version_created_at', document_version_document_id = $document_id");
+    // 2) Save the current version into document_versions
+    mysqli_query(
+        $mysqli,
+        "INSERT INTO document_versions SET
+            document_version_name        = '$original_document_name',
+            document_version_description = '$original_document_description',
+            document_version_content     = '$original_document_content',
+            document_version_created_by  = $document_version_created_by,
+            document_version_created_at  = '$document_version_created_at',
+            document_version_document_id = $document_id"
+    );
 
     $document_version_id = mysqli_insert_id($mysqli);
 
-    // Update Document
-    mysqli_query($mysqli,"UPDATE documents SET document_name = '$name', document_description = '$description', document_content = '$content', document_content_raw = '$content_raw', document_folder_id = $folder, document_updated_by = $session_user_id WHERE document_id = $document_id");
+    // 3) Process the NEW content from the form:
+    //    - convert base64 <img> tags to files under /uploads/documents/<document_id>/
+    //    - rewrite <img src> to file URLs
+    $raw_post_content = $_POST['content'];
 
-    logAction("Document", "Edit", "$session_name edited document $name, previous version kept", $client_id, $document_version_id);
+    $processed_html = saveBase64Images(
+        $raw_post_content,
+        $_SERVER['DOCUMENT_ROOT'] . "/uploads/documents/",
+        "uploads/documents/",
+        $document_id
+    );
+
+    // Escape for DB
+    $content = mysqli_real_escape_string($mysqli, $processed_html);
+
+    // Rebuild content_raw for full-text search
+    $content_raw = sanitizeInput(
+        $name . " " . str_replace("<", " <", $processed_html)
+    );
+    $content_raw = mysqli_real_escape_string($mysqli, $content_raw);
+
+    // 4) Update the document with the new content + metadata
+    mysqli_query(
+        $mysqli,
+        "UPDATE documents SET
+            document_name        = '$name',
+            document_description = '$description',
+            document_content     = '$content',
+            document_content_raw = '$content_raw',
+            document_folder_id   = $folder,
+            document_updated_by  = $session_user_id
+         WHERE document_id = $document_id"
+    );
+
+    logAction(
+        "Document",
+        "Edit",
+        "$session_name edited document $name, previous version kept",
+        $client_id,
+        $document_version_id
+    );
 
     flash_alert("Document <strong>$name</strong> edited, previous version kept");
 
     redirect("document_details.php?client_id=$client_id&document_id=$document_id");
+
 }
 
 if (isset($_POST['move_document'])) {
@@ -629,6 +739,9 @@ if (isset($_GET['delete_document'])) {
     // Delete all versions associated with the master document
     mysqli_query($mysqli,"DELETE FROM document_versions WHERE document_version_document_id = $document_id");
 
+    // Delete uploads/document/$document_id if exists
+    removeDirectory($_SERVER['DOCUMENT_ROOT'] . "/uploads/documents/" . $document_id);
+
     logAction("Document", "Delete", "$session_name deleted document $document_name and all versions", $client_id);
 
     flash_alert("Document <strong>$document_name</strong> deleted and all versions", 'error');
@@ -669,6 +782,9 @@ if (isset($_POST['bulk_delete_documents'])) {
 
             // Delete all versions associated with the master document
             mysqli_query($mysqli,"DELETE FROM document_versions WHERE document_version_document_id = $document_id");
+
+            // Delete uploads/document/$document_id if exists
+            removeDirectory($_SERVER['DOCUMENT_ROOT'] . "/uploads/documents/" . $document_id);
 
             logAction("Document", "Delete", "$session_name deleted document $document_name and all versions", $client_id);  
 

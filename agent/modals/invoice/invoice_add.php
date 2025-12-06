@@ -97,6 +97,16 @@ ob_start();
             </div>
         </div>
 
+        <div class='form-group'>
+            <label>Discount Amount</label>
+            <div class='input-group'>
+                <div class='input-group-prepend'>
+                    <span class='input-group-text'><i class='fa fa-fw fa-dollar-sign'></i></span>
+                </div>
+                <input type='text' class='form-control' inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" name='invoice_discount' placeholder='0.00'>
+            </div>
+        </div>
+
     </div>
     <div class="modal-footer">
         <button type="submit" name="add_invoice" class="btn btn-primary text-bold"><i class="fa fa-check mr-2"></i>Create</button>

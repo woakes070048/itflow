@@ -50,9 +50,16 @@ if (isset($_POST['add_ticket'])) {
         $contact = intval($row['contact_id']);
     }
 
-    //Get the next Ticket Number and add 1 for the new ticket number
-    $ticket_number = $config_ticket_next_number;
-    $new_config_ticket_next_number = $config_ticket_next_number + 1;
+    // Atomically increment and get the new ticket number
+    mysqli_query($mysqli, "
+        UPDATE settings
+        SET
+            config_ticket_next_number = LAST_INSERT_ID(config_ticket_next_number),
+            config_ticket_next_number = config_ticket_next_number + 1
+        WHERE company_id = 1
+    ");
+
+    $ticket_number = mysqli_insert_id($mysqli);
 
     // Sanitize Config Vars from get_settings.php and Session Vars from check_login.php
     $config_ticket_prefix = sanitizeInput($config_ticket_prefix);
@@ -62,8 +69,6 @@ if (isset($_POST['add_ticket'])) {
 
     //Generate a unique URL key for clients to access
     $url_key = randomString(156);
-
-    mysqli_query($mysqli, "UPDATE settings SET config_ticket_next_number = $new_config_ticket_next_number WHERE company_id = 1");
 
     mysqli_query($mysqli, "INSERT INTO tickets SET ticket_prefix = '$config_ticket_prefix', ticket_number = $ticket_number, ticket_source = 'Agent', ticket_category = $category_id, ticket_subject = '$subject', ticket_details = '$details', ticket_priority = '$priority', ticket_billable = '$billable', ticket_status = '$ticket_status', ticket_vendor_ticket_number = '$vendor_ticket_number', ticket_vendor_id = $vendor_id, ticket_location_id = $location_id, ticket_asset_id = $asset_id, ticket_created_by = $session_user_id, ticket_assigned_to = $assigned_to, ticket_contact_id = $contact, ticket_url_key = '$url_key', ticket_due_at = $due, ticket_client_id = $client_id, ticket_invoice_id = 0, ticket_project_id = $project_id");
 
@@ -105,8 +110,8 @@ if (isset($_POST['add_ticket'])) {
     if (!empty($config_smtp_host) && $config_ticket_client_general_notifications == 1) {
 
         // Get contact/ticket details
-        $sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_category, ticket_subject, ticket_details, ticket_priority, ticket_status, ticket_created_by, ticket_assigned_to, ticket_client_id FROM tickets 
-              LEFT JOIN clients ON ticket_client_id = client_id 
+        $sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_category, ticket_subject, ticket_details, ticket_priority, ticket_status, ticket_created_by, ticket_assigned_to, ticket_client_id FROM tickets
+              LEFT JOIN clients ON ticket_client_id = client_id
               LEFT JOIN contacts ON ticket_contact_id = contact_id
               WHERE ticket_id = $ticket_id");
         $row = mysqli_fetch_array($sql);
@@ -233,11 +238,11 @@ if (isset($_POST['edit_ticket'])) {
     }
 
     // Get contact/ticket details after update for logging / email purposes
-    $sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_category, ticket_details, ticket_status_name, ticket_created_by, ticket_assigned_to, ticket_url_key, ticket_client_id FROM tickets 
-        LEFT JOIN clients ON ticket_client_id = client_id 
+    $sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_category, ticket_details, ticket_status_name, ticket_created_by, ticket_assigned_to, ticket_url_key, ticket_client_id FROM tickets
+        LEFT JOIN clients ON ticket_client_id = client_id
         LEFT JOIN contacts ON ticket_contact_id = contact_id
-        LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id               
-        WHERE ticket_id = $ticket_id 
+        LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
+        WHERE ticket_id = $ticket_id
         AND ticket_closed_at IS NULL");
     $row = mysqli_fetch_array($sql);
 
@@ -304,10 +309,10 @@ if (isset($_POST['edit_ticket_priority'])) {
     $client_id = intval($_POST['client_id']);
 
     // Get ticket details before updating
-    $sql = mysqli_query($mysqli, "SELECT 
+    $sql = mysqli_query($mysqli, "SELECT
         ticket_prefix, ticket_number, ticket_priority, ticket_status_name, ticket_client_id
-        FROM tickets 
-        LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id               
+        FROM tickets
+        LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
         WHERE ticket_id = $ticket_id"
     );
     $row = mysqli_fetch_array($sql);
@@ -341,7 +346,7 @@ if (isset($_POST['edit_ticket_contact'])) {
     $notify = intval($_POST['contact_notify']) ?? 0;
 
     // Get Original contact, and ticket details
-    $sql = mysqli_query($mysqli, "SELECT 
+    $sql = mysqli_query($mysqli, "SELECT
         contact_name, ticket_prefix, ticket_number, ticket_status_name, ticket_subject, ticket_details, ticket_url_key, ticket_client_id
         FROM tickets
         LEFT JOIN contacts ON ticket_contact_id = contact_id
@@ -447,10 +452,10 @@ if (isset($_POST['add_ticket_watcher'])) {
     $notify = intval($_POST['watcher_notify'] ?? 0);
 
     // Get contact/ticket details
-    $sql = mysqli_query($mysqli, "SELECT ticket_prefix, ticket_number, ticket_category, ticket_subject, ticket_details, ticket_priority, ticket_status_name, ticket_url_key, ticket_created_by, ticket_assigned_to, ticket_client_id FROM tickets 
+    $sql = mysqli_query($mysqli, "SELECT ticket_prefix, ticket_number, ticket_category, ticket_subject, ticket_details, ticket_priority, ticket_status_name, ticket_url_key, ticket_created_by, ticket_assigned_to, ticket_client_id FROM tickets
     LEFT JOIN clients ON ticket_client_id = client_id
     LEFT JOIN contacts ON ticket_contact_id = contact_id
-    LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id                                                                                         
+    LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
     WHERE ticket_id = $ticket_id
     AND ticket_closed_at IS NULL");
     $row = mysqli_fetch_array($sql);
@@ -485,7 +490,7 @@ if (isset($_POST['add_ticket_watcher'])) {
             // Notify watcher
             if ($notify && !empty($config_smtp_host)) {
 
-                
+
 
                 // Email content
                 $data = []; // Queue array
@@ -523,7 +528,7 @@ if (isset($_GET['delete_ticket_watcher'])) {
     $watcher_id = intval($_GET['delete_ticket_watcher']);
 
     // Get ticket / watcher details for logging
-    $sql = mysqli_query($mysqli, "SELECT watcher_email, ticket_prefix, ticket_number, ticket_status_name, ticket_client_id, ticket_id FROM ticket_watchers 
+    $sql = mysqli_query($mysqli, "SELECT watcher_email, ticket_prefix, ticket_number, ticket_status_name, ticket_client_id, ticket_id FROM ticket_watchers
         LEFT JOIN tickets ON watcher_ticket_id = ticket_id
         LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
         WHERE watcher_id = $watcher_id"
@@ -559,7 +564,7 @@ if (isset($_GET['delete_ticket_additional_asset'])) {
 
     // Get ticket / asset details for logging
     $sql = mysqli_query($mysqli, "SELECT asset_name, ticket_prefix, ticket_number, ticket_status_name, ticket_client_id FROM assets
-        JOIN tickets ON ticket_id = $ticket_id 
+        JOIN tickets ON ticket_id = $ticket_id
         JOIN ticket_statuses ON ticket_status = ticket_status_id
         WHERE asset_id = $asset_id"
     );
@@ -607,7 +612,7 @@ if (isset($_POST['edit_ticket_asset'])) {
     }
 
     // Get ticket / asset details for logging
-    $sql = mysqli_query($mysqli, "SELECT asset_name, ticket_prefix, ticket_number, ticket_status_name, ticket_client_id FROM assets 
+    $sql = mysqli_query($mysqli, "SELECT asset_name, ticket_prefix, ticket_number, ticket_status_name, ticket_client_id FROM assets
         LEFT JOIN tickets ON ticket_asset_id = asset_id
         LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
         WHERE ticket_id = $ticket_id"
@@ -638,7 +643,7 @@ if (isset($_POST['edit_ticket_vendor'])) {
     mysqli_query($mysqli, "UPDATE tickets SET ticket_vendor_id = $vendor_id WHERE ticket_id = $ticket_id");
 
     // Get ticket / vendor details for logging
-    $sql = mysqli_query($mysqli, "SELECT vendor_name, ticket_prefix, ticket_number, ticket_status_name, ticket_client_id FROM vendors 
+    $sql = mysqli_query($mysqli, "SELECT vendor_name, ticket_prefix, ticket_number, ticket_status_name, ticket_client_id FROM vendors
         LEFT JOIN tickets ON ticket_vendor_id = $vendor_id
         LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
         WHERE ticket_id = $ticket_id"
@@ -1164,7 +1169,7 @@ if (isset($_POST['bulk_resolve_tickets'])) {
                 if (!empty($config_smtp_host) && $config_ticket_client_general_notifications == 1 && $private_note == 0) {
 
                     // Get Contact details
-                    $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email FROM tickets 
+                    $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email FROM tickets
                         LEFT JOIN contacts ON ticket_contact_id = contact_id
                         WHERE ticket_id = $ticket_id
                     ");
@@ -1498,10 +1503,16 @@ if (isset($_POST['bulk_add_asset_ticket'])) {
 
             $subject_asset_prepended = "$asset_name - $subject";
 
-             // Get the next Ticket Number and update the config
-            $sql_ticket_number = mysqli_query($mysqli, "SELECT config_ticket_next_number FROM settings WHERE company_id = 1");
-            $ticket_number_row = mysqli_fetch_array($sql_ticket_number);
-            $ticket_number = intval($ticket_number_row['config_ticket_next_number']);
+            // Atomically increment and get the new ticket number
+            mysqli_query($mysqli, "
+                UPDATE settings
+                SET
+                    config_ticket_next_number = LAST_INSERT_ID(config_ticket_next_number),
+                    config_ticket_next_number = config_ticket_next_number + 1
+                WHERE company_id = 1
+            ");
+
+            $ticket_number = mysqli_insert_id($mysqli);
 
             // Sanitize Config Vars from get_settings.php and Session Vars from check_login.php
             $config_ticket_prefix = sanitizeInput($config_ticket_prefix);
@@ -1512,17 +1523,9 @@ if (isset($_POST['bulk_add_asset_ticket'])) {
             //Generate a unique URL key for clients to access
             $url_key = randomString(156);
 
-            // Increment the config ticket next number
-            $new_config_ticket_next_number = $ticket_number + 1;
-
-            mysqli_query($mysqli, "UPDATE settings SET config_ticket_next_number = $new_config_ticket_next_number WHERE company_id = 1");
-
             mysqli_query($mysqli, "INSERT INTO tickets SET ticket_prefix = '$config_ticket_prefix', ticket_number = $ticket_number, ticket_category = $category_id, ticket_subject = '$subject_asset_prepended', ticket_details = '$details', ticket_priority = '$priority', ticket_billable = $billable, ticket_status = $ticket_status, ticket_asset_id = $asset_id, ticket_created_by = $session_user_id, ticket_assigned_to = $assigned_to, ticket_url_key = '$url_key', ticket_client_id = $client_id, ticket_project_id = $project_id");
 
             $ticket_id = mysqli_insert_id($mysqli);
-
-            // Update the next ticket number in the database
-            mysqli_query($mysqli, "UPDATE settings SET config_ticket_next_number = $new_config_ticket_next_number WHERE company_id = 1");
 
             // Add Tasks
             if (!empty($_POST['tasks'])) {
@@ -1591,7 +1594,7 @@ if (isset($_POST['add_ticket_reply'])) {
     if ($ticket_reply !== '' && $ticket_reply_type !== 'Internal') {
         $ticket_reply .= getFieldById('user_settings',$session_user_id,'user_config_signature', 'raw');
     }
-    
+
     $ticket_reply = mysqli_escape_string($mysqli, $ticket_reply); // SQL Escape Ticket Reply
 
     // Update Ticket Status & updated at (in case status didn't change)
@@ -1614,8 +1617,8 @@ if (isset($_POST['add_ticket_reply'])) {
 
         // Get Ticket Details
         $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_subject, ticket_status, ticket_status_name, ticket_url_key, ticket_first_response_at, ticket_created_by, ticket_assigned_to, ticket_client_id
-        FROM tickets 
-        LEFT JOIN clients ON ticket_client_id = client_id 
+        FROM tickets
+        LEFT JOIN clients ON ticket_client_id = client_id
         LEFT JOIN contacts ON ticket_contact_id = contact_id
         LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
         WHERE ticket_id = $ticket_id
@@ -1916,8 +1919,8 @@ if (isset($_GET['resolve_ticket'])) {
     if (!empty($config_smtp_host) && $config_ticket_client_general_notifications == 1) {
 
         // Get details
-        $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_subject, ticket_status_name, ticket_assigned_to, ticket_url_key, ticket_client_id FROM tickets 
-            LEFT JOIN clients ON ticket_client_id = client_id 
+        $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_subject, ticket_status_name, ticket_assigned_to, ticket_url_key, ticket_client_id FROM tickets
+            LEFT JOIN clients ON ticket_client_id = client_id
             LEFT JOIN contacts ON ticket_contact_id = contact_id
             LEFT JOIN ticket_statuses ON ticket_status = ticket_status_id
             WHERE ticket_id = $ticket_id
@@ -2013,8 +2016,8 @@ if (isset($_GET['close_ticket'])) {
     if (!empty($config_smtp_host) && $config_ticket_client_general_notifications == 1) {
 
         // Get details
-        $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_subject, ticket_url_key FROM tickets 
-            LEFT JOIN clients ON ticket_client_id = client_id 
+        $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_subject, ticket_url_key FROM tickets
+            LEFT JOIN clients ON ticket_client_id = client_id
             LEFT JOIN contacts ON ticket_contact_id = contact_id
             WHERE ticket_id = $ticket_id
         ");
@@ -2119,7 +2122,7 @@ if (isset($_POST['add_invoice_from_ticket'])) {
         $mysqli,
         "SELECT * FROM tickets
         LEFT JOIN clients ON ticket_client_id = client_id
-        LEFT JOIN contacts ON ticket_contact_id = contact_id 
+        LEFT JOIN contacts ON ticket_contact_id = contact_id
         LEFT JOIN assets ON ticket_asset_id = asset_id
         LEFT JOIN locations ON ticket_location_id = location_id
         WHERE ticket_id = $ticket_id"
@@ -2150,11 +2153,18 @@ if (isset($_POST['add_invoice_from_ticket'])) {
 
     if ($invoice_id == 0) {
 
-        //Get the last Invoice Number and add 1 for the new invoice number
-        $invoice_number = $config_invoice_next_number;
         $invoice_prefix = sanitizeInput($config_invoice_prefix);
-        $new_config_invoice_next_number = $config_invoice_next_number + 1;
-        mysqli_query($mysqli, "UPDATE settings SET config_invoice_next_number = $new_config_invoice_next_number WHERE company_id = 1");
+
+        // Atomically increment and get the new invoice number
+        mysqli_query($mysqli, "
+            UPDATE settings
+            SET
+                config_invoice_next_number = LAST_INSERT_ID(config_invoice_next_number),
+                config_invoice_next_number = config_invoice_next_number + 1
+            WHERE company_id = 1
+        ");
+
+        $invoice_number = mysqli_insert_id($mysqli);
 
         //Generate a unique URL key for clients to access
         $url_key = randomString(156);
@@ -2218,7 +2228,7 @@ if (isset($_POST['export_tickets_csv'])) {
 
     enforceUserPermission('module_support', 2);
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "WHERE ticket_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
@@ -2308,7 +2318,7 @@ if (isset($_POST['edit_ticket_schedule'])) {
     $full_ticket_url = "https://$config_base_url/client/ticket.php?ticket_id=$ticket_id";
     $ticket_link_html = "<a href=\"$full_ticket_url\">$ticket_link</a>";
 
-    mysqli_query($mysqli,"UPDATE tickets 
+    mysqli_query($mysqli,"UPDATE tickets
         SET ticket_schedule = '$schedule', ticket_onsite = $onsite
         WHERE ticket_id = $ticket_id"
     );
@@ -2325,7 +2335,7 @@ if (isset($_POST['edit_ticket_schedule'])) {
             $conflicting_tickets[] = $row['ticket_id'] . " - " . $row['ticket_subject'] . " @ " . $row['ticket_schedule'];
         }
     }
-    $sql = mysqli_query($mysqli, "SELECT * FROM tickets 
+    $sql = mysqli_query($mysqli, "SELECT * FROM tickets
         LEFT JOIN clients ON ticket_client_id = client_id
         LEFT JOIN contacts ON ticket_contact_id = contact_id
         LEFT JOIN locations on contact_location_id = location_id
@@ -2491,7 +2501,7 @@ if (isset($_GET['cancel_ticket_schedule'])) {
 
     //Send emails
 
-    $sql = mysqli_query($mysqli, "SELECT * FROM tickets 
+    $sql = mysqli_query($mysqli, "SELECT * FROM tickets
         LEFT JOIN clients ON ticket_client_id = client_id
         LEFT JOIN contacts ON ticket_contact_id = contact_id
         LEFT JOIN locations on contact_location_id = location_id

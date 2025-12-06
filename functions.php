@@ -63,6 +63,32 @@ function removeDirectory($path) {
     rmdir($path);
 }
 
+function copyDirectory($src, $dst) {
+    if (!is_dir($src)) {
+        return;
+    }
+
+    if (!is_dir($dst)) {
+        mkdir($dst, 0775, true);
+    }
+
+    $items = scandir($src);
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $srcPath = $src . '/' . $item;
+        $dstPath = $dst . '/' . $item;
+
+        if (is_dir($srcPath)) {
+            copyDirectory($srcPath, $dstPath);
+        } else {
+            copy($srcPath, $dstPath);
+        }
+    }
+}
+
 function getUserAgent() {
     return $_SERVER['HTTP_USER_AGENT'];
 }
@@ -802,6 +828,26 @@ function sanitizeInput($input) {
     return $input;
 }
 
+function cleanInput($input) {
+    // Only process non-empty input
+    if (!empty($input)) {
+        // Normalize encoding to UTF-8 if it’s not valid
+        if (!mb_check_encoding($input, 'UTF-8')) {
+            // Convert from Windows-1252 as a safe fallback
+            $input = mb_convert_encoding($input, 'UTF-8', 'Windows-1252');
+        }
+    }
+
+    // Remove HTML and PHP tags
+    $input = strip_tags((string) $input);
+
+    // Trim whitespace
+    $input = trim($input);
+
+    return $input;
+}
+
+
 function sanitizeForEmail($data)
 {
     $sanitized = htmlspecialchars($data);
@@ -1383,7 +1429,7 @@ function appNotify($type, $details, $action = null, $client_id = 0, $entity_id =
     $details = substr($details, 0, 1000);
     $action = substr($action, 0, 250);
 
-    $sql = mysqli_query($mysqli, "SELECT user_id FROM users 
+    $sql = mysqli_query($mysqli, "SELECT user_id FROM users
         WHERE user_type = 1 AND user_status = 1 AND user_archived_at IS NULL
     ");
 
@@ -1522,14 +1568,10 @@ function getFieldById($table, $id, $field, $escape_method = 'sql') {
 }
 
 // Recursive function to display folder options - Used in folders files and documents
-function display_folder_options($parent_folder_id, $client_id, $folder_location = 0, $indent = 0) {
+function display_folder_options($parent_folder_id, $client_id, $indent = 0) {
     global $mysqli;
 
-    $folder_location = intval($folder_location);
-    // 0 = Document Folders
-    // 1 = File Folders
-
-    $sql_folders = mysqli_query($mysqli, "SELECT * FROM folders WHERE parent_folder = $parent_folder_id AND folder_location = $folder_location AND folder_client_id = $client_id ORDER BY folder_name ASC");
+    $sql_folders = mysqli_query($mysqli, "SELECT * FROM folders WHERE parent_folder = $parent_folder_id AND folder_client_id = $client_id ORDER BY folder_name ASC");
     while ($row = mysqli_fetch_array($sql_folders)) {
         $folder_id = intval($row['folder_id']);
         $folder_name = nullable_htmlentities($row['folder_name']);
@@ -1547,7 +1589,7 @@ function display_folder_options($parent_folder_id, $client_id, $folder_location 
         echo "<option value=\"$folder_id\" $selected>$indentation$folder_name</option>";
 
         // Recursively display subfolders
-        display_folder_options($folder_id, $client_id, $folder_location, $indent + 1);
+        display_folder_options($folder_id, $client_id, $indent + 1);
     }
 }
 
@@ -1622,4 +1664,123 @@ function sanitize_filename($filename, $strict = false) {
     }
 
     return $filename;
+}
+
+function saveBase64Images(string $html, string $baseFsPath, string $baseWebPath, int $ownerId): string {
+    // Normalize paths
+    $baseFsPath  = rtrim($baseFsPath, '/\\') . '/';
+    $baseWebPath = rtrim($baseWebPath, '/\\') . '/';
+
+    $targetDir = $baseFsPath . $ownerId . "/";
+
+    $folderCreated = false;   // <-- NEW FLAG
+    $savedAny      = false;   // <-- Track if ANY images processed
+
+    libxml_use_internal_errors(true);
+    $dom = new DOMDocument();
+    $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+    libxml_clear_errors();
+
+    $imgs = $dom->getElementsByTagName('img');
+
+    foreach ($imgs as $img) {
+        $src = $img->getAttribute('src');
+
+        // Match base64 images
+        if (preg_match('/^data:image\/([a-zA-Z0-9+]+);base64,(.*)$/s', $src, $matches)) {
+
+            $savedAny = true;  // <-- We are actually saving at least 1 image
+
+            // Create folder ONLY when needed
+            if (!$folderCreated) {
+                if (!is_dir($targetDir)) {
+                    mkdir($targetDir, 0775, true);
+                }
+                $folderCreated = true;
+            }
+
+            $mimeType = strtolower($matches[1]);
+            $base64   = $matches[2];
+
+            $binary = base64_decode($base64);
+            if ($binary === false) {
+                continue;
+            }
+
+            // Extension mapping
+            switch ($mimeType) {
+                case 'jpeg':
+                case 'jpg': $ext = 'jpg'; break;
+                case 'png': $ext = 'png'; break;
+                case 'gif': $ext = 'gif'; break;
+                case 'webp': $ext = 'webp'; break;
+                default: $ext = 'png';
+            }
+
+            // Secure random filename
+            $uid = bin2hex(random_bytes(16));
+            $filename = "img_{$uid}.{$ext}";
+
+            $filePath = $targetDir . $filename;
+
+            if (file_put_contents($filePath, $binary) !== false) {
+                $webPath = "/" . $baseWebPath . $ownerId . "/" . $filename;
+                $img->setAttribute('src', $webPath);
+            }
+        }
+    }
+
+    // If no images were processed, return original HTML immediately
+    if (!$savedAny) {
+        return $html;
+    }
+
+    // Extract body content only
+    $body = $dom->getElementsByTagName('body')->item(0);
+
+    if ($body) {
+        $innerHTML = '';
+        foreach ($body->childNodes as $child) {
+            $innerHTML .= $dom->saveHTML($child);
+        }
+        return $innerHTML;
+    }
+
+    return $html;
+}
+
+function cleanupUnusedImages(string $html, string $folderFsPath, string $folderWebPath) {
+
+    $folderFsPath  = rtrim($folderFsPath, '/\\') . '/';
+    $folderWebPath = rtrim($folderWebPath, '/\\') . '/';
+
+    if (!is_dir($folderFsPath)) {
+        return; // no folder = nothing to delete
+    }
+
+    // 1. Get all files currently on disk
+    $filesOnDisk = glob($folderFsPath . "*");
+
+    // 2. Find all <img src="">
+    preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $html, $matches);
+    $htmlImagePaths = $matches[1] ?? [];
+
+    // Normalize paths: keep only filenames belonging to this template folder
+    $referencedFiles = [];
+
+    foreach ($htmlImagePaths as $src) {
+        if (strpos($src, $folderWebPath) !== false) {
+            $filename = basename($src);
+            $referencedFiles[] = $filename;
+        }
+    }
+
+    // 3. Delete any physical file not referenced in the HTML
+    foreach ($filesOnDisk as $filePath) {
+        $filename = basename($filePath);
+
+        if (!in_array($filename, $referencedFiles)) {
+            unlink($filePath);
+        }
+    }
 }

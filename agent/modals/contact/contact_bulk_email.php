@@ -2,9 +2,9 @@
 
 require_once '../../../includes/modal_header.php';
 
-$selected_ids = array_map('intval', $_GET['selected_ids'] ?? []);
+$contact_ids = array_map('intval', $_GET['contact_ids'] ?? []);
 
-$count = count($selected_ids);
+$count = count($contact_ids);
 
 ob_start();
 
@@ -18,7 +18,7 @@ ob_start();
 </div>
 <form action="post.php" method="post" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-    <?php foreach ($selected_ids as $id) { ?><input type="hidden" name="contact_ids[]" value="<?= $id ?>"><?php } ?>
+    <?php foreach ($contact_ids as $contact_id) { ?><input type="hidden" name="contact_ids[]" value="<?= $contact_id ?>"><?php } ?>
     <div class="modal-body">
 
         <label>From Email / Display Name</label>

@@ -62,7 +62,7 @@ if (isset($_POST['add_contact'])) {
             move_uploaded_file($file_tmp_path, $dest_path);
 
             mysqli_query($mysqli,"UPDATE contacts SET contact_photo = '$new_file_name' WHERE contact_id = $contact_id");
-            
+
         }
     }
 
@@ -106,7 +106,7 @@ if (isset($_POST['edit_contact'])) {
         }
     // Create New User
     } elseif ($contact_user_id == 0 && $name && $email && $auth_method) {
-        
+
         // Set password
         if ($_POST['contact_password']) {
             $password_hash = password_hash(trim($_POST['contact_password']), PASSWORD_DEFAULT);
@@ -138,7 +138,7 @@ if (isset($_POST['edit_contact'])) {
             unlink("../uploads/clients/$client_id/$existing_file_name");
 
             mysqli_query($mysqli,"UPDATE contacts SET contact_photo = '$new_file_name' WHERE contact_id = $contact_id");
-                
+
         }
     }
 
@@ -258,7 +258,7 @@ if (isset($_GET['archive_contact_note'])) {
     $contact_id = intval($row['contact_id']);
 
     mysqli_query($mysqli,"UPDATE contact_notes SET contact_note_archived_at = NOW() WHERE contact_note_id = $contact_note_id");
-    
+
     logAction("Contact", "Edit", "$session_name archived note $contact_note_type for $contact_name", $client_id, $contact_id);
 
     flash_alert("Note <strong>$contact_note_type</strong> archived", 'error');
@@ -282,7 +282,7 @@ if (isset($_GET['unarchive_contact_note'])) {
     $contact_id = intval($row['contact_id']);
 
     mysqli_query($mysqli,"UPDATE contact_notes SET contact_note_archived_at = NULL WHERE contact_note_id = $contact_note_id");
-    
+
     logAction("Contact", "Edit", "$session_name restored note $contact_note_type for $contact_name", $client_id, $contact_id);
 
     flash_alert("Note <strong>$contact_note_type</strong> restored");
@@ -329,10 +329,10 @@ if (isset($_POST['bulk_assign_contact_location'])) {
 
     // Assign Location to Selected Contacts
     if (isset($_POST['contact_ids'])) {
-        
+
         // Get Selected Contacts Count
         $contact_count = count($_POST['contact_ids']);
-        
+
         foreach($_POST['contact_ids'] as $contact_id) {
             $contact_id = intval($contact_id);
 
@@ -382,7 +382,7 @@ if (isset($_POST['bulk_edit_contact_phone'])) {
             logAction("Contact", "Edit", "$session_name set Phone Number to $phone for $contact_name", $client_id, $contact_id);
 
         } // End Assign Location Loop
-        
+
         logAction("Contact", "Bulk Edit", "$session_name set the Phone Number $phone for $contact_count contacts", $client_id);
 
         flash_alert("Phone Number set to <b>" . formatPhoneNumber($phone) . "</b> on $contact_count</b> contacts");
@@ -518,7 +518,7 @@ if (isset($_POST['bulk_assign_contact_tags'])) {
 }
 
 if (isset($_POST['send_bulk_mail_now'])) {
-    
+
     if (isset($_POST['contact_ids'])) {
 
         $count = count($_POST['contact_ids']);
@@ -540,7 +540,7 @@ if (isset($_POST['send_bulk_mail_now'])) {
             $client_id = intval($row['contact_client_id']);
 
             // Queue Mail
-            $data[] = [    
+            $data[] = [
                 'from' => $mail_from,
                 'from_name' => $mail_from_name,
                 'recipient' => $contact_email,
@@ -555,7 +555,7 @@ if (isset($_POST['send_bulk_mail_now'])) {
         logAction("Bulk Mail", "Send", "$session_name sent $count messages via bulk mail");
 
         flash_alert("<strong>$count</strong> messages queued");
-    
+
     }
 
     redirect();
@@ -596,7 +596,7 @@ if (isset($_POST['bulk_archive_contacts'])) {
 
                 // Individual Contact logging
                 logAction("Contact", "Archive", "$session_name archived $contact_name", $client_id, $contact_id);
-                
+
                 $count++;
             }
 
@@ -782,7 +782,7 @@ if (isset($_GET['anonymize_contact'])) {
             $ticket_reply_details = $ticket_reply['ticket_reply'];
             $ticket_reply_details = str_ireplace($info_to_redact, "*****", $ticket_reply_details);
             $ticket_reply_details = sanitizeInput($ticket_reply_details);
-            
+
             mysqli_query($mysqli,"UPDATE ticket_replies SET ticket_reply = '$ticket_reply_details'
                 WHERE ticket_reply_id = $ticket_reply_id"
             );
@@ -820,7 +820,7 @@ if (isset($_GET['archive_contact'])) {
     }
 
     mysqli_query($mysqli,"UPDATE contacts SET contact_important = 0, contact_billing = 0, contact_technical = 0, contact_archived_at = NOW() WHERE contact_id = $contact_id");
-    
+
     logAction("Contact", "Archive", "$session_name archived contact $contact_name", $client_id, $contact_id);
 
     flash_alert("Contact <strong>$contact_name</strong> has been archived", 'error');
@@ -1150,7 +1150,7 @@ if (isset($_POST['export_contacts_csv'])) {
 
     enforceUserPermission('module_client');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND contact_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
@@ -1293,9 +1293,9 @@ if (isset($_POST["import_contacts_csv"])) {
         logAction("Contact", "Import", "$session_name imported $row_count contact(s) via CSV file", $client_id);
 
         flash_alert("$row_count Contact(s) added, $duplicate_count duplicate(s) detected", 'warning');
-        
+
         redirect();
-    
+
     }
     //Check for any errors, if there are notify user and redirect
     if ($error) {
@@ -1305,7 +1305,10 @@ if (isset($_POST["import_contacts_csv"])) {
 }
 
 if (isset($_GET['download_contacts_csv_template'])) {
+
     $delimiter = ",";
+    $enclosure = '"';
+    $escape    = '\\';
     $filename = "Contacts-Template.csv";
 
     //create a file pointer
@@ -1322,7 +1325,7 @@ if (isset($_GET['download_contacts_csv_template'])) {
         'Mobile Phone        ',
         'Office Location     '
     );
-    fputcsv($f, $fields, $delimiter);
+    fputcsv($f, $fields, $delimiter, $enclosure, $escape);
 
     //move back to beginning of file
     fseek($f, 0);

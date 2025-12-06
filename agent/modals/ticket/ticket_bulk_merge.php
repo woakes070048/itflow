@@ -2,15 +2,15 @@
 
 require_once '../../../includes/modal_header.php';
 
-$selected_ids = array_map('intval', $_GET['selected_ids'] ?? []);
+$ticket_ids = array_map('intval', $_GET['ticket_ids'] ?? []);
 
-$count = count($selected_ids);
+$count = count($ticket_ids);
 
 ob_start();
 
 ?>
 <div class="modal-header bg-dark">
-    <h5 class="modal-title"><i class="fa fa-fw fa-clone mr-2"></i>Merge & close <strong><?= $count ?></strong>tickets</h5>
+    <h5 class="modal-title"><i class="fa fa-fw fa-clone mr-2"></i>Merge & close <strong><?= $count ?></strong> tickets</h5>
     <button type="button" class="close text-white" data-dismiss="modal">
         <span>&times;</span>
     </button>
@@ -18,7 +18,7 @@ ob_start();
 
 <form action="post.php" method="post" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-    <?php foreach ($selected_ids as $id) { ?><input type="hidden" name="ticket_ids[]" value="<?= $id ?>"><?php } ?>
+    <?php foreach ($ticket_ids as $ticket_id) { ?><input type="hidden" name="ticket_ids[]" value="<?= $ticket_id ?>"><?php } ?>
     <input type="hidden" id="current_ticket_id" value="0"> <!-- Can't currently bulk check this -->
     <input type="hidden" name="merge_move_replies" value="0"> <!-- Default 0 -->
     <div class="modal-body">
@@ -75,3 +75,5 @@ ob_start();
 
 <!-- Ticket merge JS -->
 <script src="/agent/js/ticket_merge.js"></script>
+
+<?php require_once '../../../includes/modal_footer.php';

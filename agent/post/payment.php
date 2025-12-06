@@ -7,7 +7,7 @@
 defined('FROM_POST_HANDLER') || die("Direct file access is not allowed");
 
 if (isset($_POST['add_payment'])) {
-    
+
     enforceUserPermission('module_sales', 2);
     enforceUserPermission('module_financial', 2);
 
@@ -175,7 +175,7 @@ if (isset($_POST['add_payment'])) {
 Apply Credit Not ready for use 2025-08-27 - JQ
 
 if (isset($_POST['apply_credit'])) {
-    
+
     enforceUserPermission('module_sales', 2);
     enforceUserPermission('module_financial', 2);
 
@@ -184,7 +184,7 @@ if (isset($_POST['apply_credit'])) {
 
     $sql = mysqli_query($mysqli, "SELECT * FROM invoices LEFT JOIN clients ON invoice_client_id = client_id WHERE invoice_id = $invoice_id");
     $row = mysqli_fetch_array($sql);
-    
+
     $invoice_prefix = sanitizeInput($row['invoice_prefix']);
     $invoice_number = intval($row['invoice_number']);
     $invoice_status = sanitizeInput($row['invoice_status']);
@@ -252,8 +252,8 @@ if (isset($_POST['apply_credit'])) {
 
     // Update the invoice credit amount
     mysqli_query($mysqli, "
-        UPDATE invoices 
-        SET invoice_credit_amount = $total_credit_applied 
+        UPDATE invoices
+        SET invoice_credit_amount = $total_credit_applied
         WHERE invoice_id = $invoice_id
     ");
 
@@ -461,15 +461,15 @@ if (isset($_POST['add_payment_stripe'])) {
         customAction('invoice_pay', $invoice_id);
 
         flash_alert("Payment amount <strong>" . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "</strong> added");
-        
+
         redirect();
 
     } else {
         mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Payment failed', history_description = 'Stripe pay failed due to payment error', history_invoice_id = $invoice_id");
-        
+
         logAction("Invoice", "Payment", "Failed online payment amount of invoice $invoice_prefix$invoice_number due to Stripe payment error", $client_id, $invoice_id);
         flash_alert("Payment failed", 'error');
-        
+
         redirect();
     }
 
@@ -646,15 +646,15 @@ if (isset($_GET['add_payment_stripe'])) {
         customAction('invoice_pay', $invoice_id);
 
         flash_alert("Payment amount <strong>" . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "</strong> added");
-        
+
         redirect();
 
     } else {
         mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Payment failed', history_description = 'Stripe pay failed due to payment error', history_invoice_id = $invoice_id");
-        
+
         logAction("Invoice", "Payment", "Failed online payment amount of invoice $invoice_prefix$invoice_number due to Stripe payment error", $client_id, $invoice_id);
         flash_alert("Payment failed", 'error');
-        
+
         redirect();
     }
 
@@ -662,7 +662,7 @@ if (isset($_GET['add_payment_stripe'])) {
 */
 
 if (isset($_POST['add_bulk_payment'])) {
-    
+
     enforceUserPermission('module_sales', 2);
     enforceUserPermission('module_financial', 2);
 
@@ -749,7 +749,7 @@ if (isset($_POST['add_bulk_payment'])) {
 
         // Get Client / Contact Info
         $sql_client = mysqli_query($mysqli,"SELECT * FROM clients
-            LEFT JOIN contacts ON clients.client_id = contacts.contact_client_id 
+            LEFT JOIN contacts ON clients.client_id = contacts.contact_client_id
             AND contact_primary = 1
             WHERE client_id = $client_id"
         );
@@ -794,7 +794,7 @@ if (isset($_POST['add_bulk_payment'])) {
 }
 
 if (isset($_GET['delete_payment'])) {
-    
+
     enforceUserPermission('module_sales', 2);
     enforceUserPermission('module_financial', 2);
 
@@ -848,8 +848,8 @@ if (isset($_GET['delete_payment'])) {
 }
 
 if (isset($_POST['export_payments_csv'])) {
-    
-    if (isset($_POST['client_id'])) {
+
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND invoice_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
@@ -861,7 +861,7 @@ if (isset($_POST['export_payments_csv'])) {
     }
 
     $sql = mysqli_query($mysqli,"SELECT * FROM payments, invoices WHERE payment_invoice_id = invoice_id $client_query ORDER BY payment_date ASC");
-    
+
     $num_rows = mysqli_num_rows($sql);
 
     if ($num_rows > 0) {

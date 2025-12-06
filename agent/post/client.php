@@ -14,107 +14,232 @@ if (isset($_POST['add_client'])) {
 
     require_once 'client_model.php';
 
+    // Location inputs
     $location_phone_country_code = preg_replace("/[^0-9]/", '', $_POST['location_phone_country_code']);
     $location_phone = preg_replace("/[^0-9]/", '', $_POST['location_phone']);
     $location_extension = preg_replace("/[^0-9]/", '', $_POST['location_extension']);
     $location_fax_country_code = preg_replace("/[^0-9]/", '', $_POST['location_fax_country_code']);
     $location_fax = preg_replace("/[^0-9]/", '', $_POST['location_fax']);
-    $address = sanitizeInput($_POST['address']);
-    $city = sanitizeInput($_POST['city']);
-    $state = sanitizeInput($_POST['state']);
-    $zip = sanitizeInput($_POST['zip']);
-    $country = sanitizeInput($_POST['country']);
-    $contact = sanitizeInput($_POST['contact']);
-    $title = sanitizeInput($_POST['title']);
+    $address = cleanInput($_POST['address']);
+    $city = cleanInput($_POST['city']);
+    $state = cleanInput($_POST['state']);
+    $zip = cleanInput($_POST['zip']);
+    $country = cleanInput($_POST['country']);
+
+    // Contact inputs
+    $contact = cleanInput($_POST['contact']);
+    $title = cleanInput($_POST['title']);
     $contact_phone_country_code = preg_replace("/[^0-9]/", '', $_POST['contact_phone_country_code']);
     $contact_phone = preg_replace("/[^0-9]/", '', $_POST['contact_phone']);
     $contact_extension = preg_replace("/[^0-9]/", '', $_POST['contact_extension']);
     $contact_mobile_country_code = preg_replace("/[^0-9]/", '', $_POST['contact_mobile_country_code']);
     $contact_mobile = preg_replace("/[^0-9]/", '', $_POST['contact_mobile']);
-    $contact_email = sanitizeInput($_POST['contact_email']);
+    $contact_email = cleanInput($_POST['contact_email']);
 
     $extended_log_description = '';
 
-    // Create client
-    mysqli_query($mysqli, "INSERT INTO clients SET client_name = '$name', client_type = '$type', client_website = '$website', client_referral = '$referral', client_rate = $rate, client_currency_code = '$session_company_currency', client_net_terms = $net_terms, client_tax_id_number = '$tax_id_number', client_lead = $lead, client_abbreviation = '$abbreviation', client_notes = '$notes', client_accessed_at = NOW()");
-
+    // Insert client using SET
+    $query = mysqli_prepare(
+        $mysqli,
+        "INSERT INTO clients SET
+        client_name = ?,
+        client_type = ?,
+        client_website = ?,
+        client_referral = ?,
+        client_rate = ?,
+        client_currency_code = ?,
+        client_net_terms = ?,
+        client_tax_id_number = ?,
+        client_lead = ?,
+        client_abbreviation = ?,
+        client_notes = ?,
+        client_accessed_at = NOW()"
+    );
+    mysqli_stmt_bind_param(
+        $query,
+        "ssssdsiisss",
+        $name,
+        $type,
+        $website,
+        $referral,
+        $rate,
+        $session_company_currency,
+        $net_terms,
+        $tax_id_number,
+        $lead,
+        $abbreviation,
+        $notes
+    );
+    mysqli_stmt_execute($query);
     $client_id = mysqli_insert_id($mysqli);
 
-    if (!file_exists($_SERVER['DOCUMENT_ROOT'] . "/uploads/clients/$client_id")) {
-        mkdir($_SERVER['DOCUMENT_ROOT'] . "/uploads/clients/$client_id");
-        file_put_contents($_SERVER['DOCUMENT_ROOT'] . "/uploads/clients/$client_id/index.php", "");
+    // Create client folder
+    $client_folder = $_SERVER['DOCUMENT_ROOT'] . "/uploads/clients/$client_id";
+    if (!file_exists($client_folder)) {
+        mkdir($client_folder);
+        file_put_contents("$client_folder/index.php", "");
     }
 
-    // Create Referral if it doesn't exist
-    $sql = mysqli_query($mysqli, "SELECT category_name FROM categories WHERE category_type = 'Referral' AND category_archived_at IS NULL AND category_name = '$referral'");
-    if(mysqli_num_rows($sql) == 0) {
-        mysqli_query($mysqli, "INSERT INTO categories SET category_name = '$referral', category_type = 'Referral'");
+    // Create referral category if it doesn't exist
+    $query = mysqli_prepare($mysqli, "SELECT category_name FROM categories WHERE category_type = 'Referral' AND category_archived_at IS NULL AND category_name = ?");
+    mysqli_stmt_bind_param($query, "s", $referral);
+    mysqli_stmt_execute($query);
+    mysqli_stmt_store_result($query);
+    if (mysqli_stmt_num_rows($query) == 0) {
+        $query = mysqli_prepare($mysqli, "INSERT INTO categories SET category_name = ?, category_type = 'Referral'");
+        mysqli_stmt_bind_param($query, "s", $referral);
+        mysqli_stmt_execute($query);
 
         logAction("Category", "Create", "$session_name created referral category $referral");
     }
 
-    // Create Location
+    // Insert primary location using SET
     if (!empty($location_phone) || !empty($address) || !empty($city) || !empty($state) || !empty($zip)) {
-        mysqli_query($mysqli, "INSERT INTO locations SET location_name = 'Primary', location_address = '$address', location_city = '$city', location_state = '$state', location_zip = '$zip', location_phone_country_code = '$location_phone_country_code', location_phone = '$location_phone', location_phone_extension = '$location_extension', location_fax_country_code = '$location_fax_country_code', location_fax = '$location_fax', location_country = '$country', location_primary = 1, location_client_id = $client_id");
-
-        //Extended Logging
+        $query = mysqli_prepare(
+            $mysqli,
+            "INSERT INTO locations SET
+            location_name = 'Primary',
+            location_address = ?,
+            location_city = ?,
+            location_state = ?,
+            location_zip = ?,
+            location_phone_country_code = ?,
+            location_phone = ?,
+            location_phone_extension = ?,
+            location_fax_country_code = ?,
+            location_fax = ?,
+            location_country = ?,
+            location_primary = 1,
+            location_client_id = ?"
+        );
+        mysqli_stmt_bind_param(
+            $query,
+            "ssssssssssi",
+            $address,
+            $city,
+            $state,
+            $zip,
+            $location_phone_country_code,
+            $location_phone,
+            $location_extension,
+            $location_fax_country_code,
+            $location_fax,
+            $country,
+            $client_id
+        );
+        mysqli_stmt_execute($query);
         $extended_log_description .= ", primary location $address added";
     }
 
-
-    // Create Contact
+    // Insert primary contact using SET
     if (!empty($contact) || !empty($title) || !empty($contact_phone) || !empty($contact_mobile) || !empty($contact_email)) {
-        mysqli_query($mysqli, "INSERT INTO contacts SET contact_name = '$contact', contact_title = '$title', contact_phone_country_code = '$contact_phone_country_code', contact_phone = '$contact_phone', contact_extension = '$contact_extension', contact_mobile_country_code = '$contact_mobile_country_code', contact_mobile = '$contact_mobile', contact_email = '$contact_email', contact_primary = 1, contact_important = 1, contact_client_id = $client_id");
-
-        //Extended Logging
+        $query = mysqli_prepare(
+            $mysqli,
+            "INSERT INTO contacts SET
+            contact_name = ?,
+            contact_title = ?,
+            contact_phone_country_code = ?,
+            contact_phone = ?,
+            contact_extension = ?,
+            contact_mobile_country_code = ?,
+            contact_mobile = ?,
+            contact_email = ?,
+            contact_primary = 1,
+            contact_important = 1,
+            contact_client_id = ?"
+        );
+        mysqli_stmt_bind_param(
+            $query,
+            "ssssssssi",
+            $contact,
+            $title,
+            $contact_phone_country_code,
+            $contact_phone,
+            $contact_extension,
+            $contact_mobile_country_code,
+            $contact_mobile,
+            $contact_email,
+            $client_id
+        );
+        mysqli_stmt_execute($query);
         $extended_log_description .= ", primary contact $contact added";
     }
 
-    // Add Tags
+    // Add tags
     if (isset($_POST['tags'])) {
+        $query = mysqli_prepare($mysqli, "INSERT INTO client_tags SET client_id = ?, tag_id = ?");
         foreach ($_POST['tags'] as $tag) {
             $tag = intval($tag);
-            mysqli_query($mysqli, "INSERT INTO client_tags SET client_id = $client_id, tag_id = $tag");
+            mysqli_stmt_bind_param($query, "ii", $client_id, $tag);
+            mysqli_stmt_execute($query);
         }
     }
 
-    // Create domain in domains/certificates
+    // Insert domain and SSL using SET
     if (!empty($website) && filter_var($website, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
-        // Get domain expiry date
         $expire = getDomainExpirationDate($website);
-
-        // NS, MX, A and WHOIS records/data
         $records = getDomainRecords($website);
-        $a = sanitizeInput($records['a']);
-        $ns = sanitizeInput($records['ns']);
-        $mx = sanitizeInput($records['mx']);
-        $whois = sanitizeInput($records['whois']);
+        $a = cleanInput($records['a']);
+        $ns = cleanInput($records['ns']);
+        $mx = cleanInput($records['mx']);
+        $whois = cleanInput($records['whois']);
 
-        // Add domain record info using whois, or not
         try {
-            mysqli_query($mysqli, "INSERT INTO domains SET domain_name = '$website', domain_registrar = 0,  domain_webhost = 0, domain_expire = '$expire', domain_ip = '$a', domain_name_servers = '$ns', domain_mail_servers = '$mx', domain_raw_whois = '$whois', domain_client_id = $client_id");
-            $extended_log_description .= ", domain $website added"; //Extended Logging
+            $query = mysqli_prepare(
+                $mysqli,
+                "INSERT INTO domains SET
+                domain_name = ?,
+                domain_registrar = 0,
+                domain_webhost = 0,
+                domain_expire = ?,
+                domain_ip = ?,
+                domain_name_servers = ?,
+                domain_mail_servers = ?,
+                domain_raw_whois = ?,
+                domain_client_id = ?"
+            );
+            mysqli_stmt_bind_param($query, "ssssssi", $website, $expire, $a, $ns, $mx, $whois, $client_id);
+            mysqli_stmt_execute($query);
+            $extended_log_description .= ", domain $website added";
         } catch (Exception $e) {
-            $extended_log_description .= ", domain not added"; //Extended Logging
-            logApp("Client", "warning", "Failed to add domain $website during client creation (usually a whois result error)");
+            $extended_log_description .= ", domain not added";
+            logApp("Client", "warning", "Failed to add domain $website during client creation");
         }
 
-        // Get inserted ID (for linking certificate, if exists)
         $domain_id = mysqli_insert_id($mysqli);
-
-        // Get SSL cert for domain (if exists)
         $certificate = getSSL($website);
+
         if ($certificate['success'] == "TRUE") {
-            $expire = sanitizeInput($certificate['expire']);
-            $issued_by = sanitizeInput($certificate['issued_by']);
-            $public_key = sanitizeInput($certificate['public_key']);
+            $expire = cleanInput($certificate['expire']);
+            $issued_by = cleanInput($certificate['issued_by']);
+            $public_key = cleanInput($certificate['public_key']);
 
-            mysqli_query($mysqli, "INSERT INTO certificates SET certificate_name = '$website', certificate_domain = '$website', certificate_issued_by = '$issued_by', certificate_expire = '$expire', certificate_public_key = '$public_key', certificate_domain_id = $domain_id, certificate_client_id = $client_id");
+            $query = mysqli_prepare(
+                $mysqli,
+                "INSERT INTO certificates SET
+                certificate_name = ?,
+                certificate_domain = ?,
+                certificate_issued_by = ?,
+                certificate_expire = ?,
+                certificate_public_key = ?,
+                certificate_domain_id = ?,
+                certificate_client_id = ?"
+            );
+            mysqli_stmt_bind_param(
+                $query,
+                "sssssii",
+                $website,
+                $website,
+                $issued_by,
+                $expire,
+                $public_key,
+                $domain_id,
+                $client_id
+            );
+            mysqli_stmt_execute($query);
 
-            //Extended Logging
             $extended_log_description .= ", SSL certificate $website added";
         }
-
     }
 
     logAction("Client", "Create", "$session_name created client $name$extended_log_description", $client_id, $client_id);
@@ -575,6 +700,8 @@ if (isset($_POST["import_clients_csv"])) {
 if (isset($_GET['download_clients_csv_template'])) {
 
     $delimiter = ",";
+    $enclosure = '"';
+    $escape    = '\\';   // backsla
     $filename = "Clients-Template.csv";
 
     //create a file pointer
@@ -582,7 +709,7 @@ if (isset($_GET['download_clients_csv_template'])) {
 
     //set column headers
     $fields = array('Client Name', 'Industry', 'Referral', 'Website', 'Primary Location Name', 'Location Phone', 'Location Address', 'City', 'State', 'Postal Code', 'Country', 'Primary Contact Name', 'Title', 'Contact Phone', 'Extension', 'Contact Mobile', 'Contact Email', 'Hourly Rate', 'Currency', 'Payment Terms', 'Tax ID', 'Abbreviation');
-    fputcsv($f, $fields, $delimiter);
+    fputcsv($f, $fields, $delimiter, $enclosure, $escape);
 
     //move back to beginning of file
     fseek($f, 0);
@@ -649,10 +776,16 @@ if (isset($_POST['bulk_add_client_ticket'])) {
 
             $client_name = sanitizeInput($row['client_name']);
 
-             // Get the next Ticket Number and update the config
-            $sql_ticket_number = mysqli_query($mysqli, "SELECT config_ticket_next_number FROM settings WHERE company_id = 1");
-            $ticket_number_row = mysqli_fetch_array($sql_ticket_number);
-            $ticket_number = intval($ticket_number_row['config_ticket_next_number']);
+            // Atomically increment and get the new ticket number
+            mysqli_query($mysqli, "
+                UPDATE settings
+                SET
+                    config_ticket_next_number = LAST_INSERT_ID(config_ticket_next_number),
+                    config_ticket_next_number = config_ticket_next_number + 1
+                WHERE company_id = 1
+            ");
+
+            $ticket_number = mysqli_insert_id($mysqli);
 
             // Sanitize Config Vars from get_settings.php and Session Vars from check_login.php
             $config_ticket_prefix = sanitizeInput($config_ticket_prefix);
@@ -663,17 +796,9 @@ if (isset($_POST['bulk_add_client_ticket'])) {
             //Generate a unique URL key for clients to access
             $url_key = randomString(156);
 
-            // Increment the config ticket next number
-            $new_config_ticket_next_number = $ticket_number + 1;
-
-            mysqli_query($mysqli, "UPDATE settings SET config_ticket_next_number = $new_config_ticket_next_number WHERE company_id = 1");
-
             mysqli_query($mysqli, "INSERT INTO tickets SET ticket_prefix = '$config_ticket_prefix', ticket_number = $ticket_number, ticket_category = $category_id, ticket_subject = '$subject', ticket_details = '$details', ticket_priority = '$priority', ticket_billable = $billable, ticket_status = $ticket_status, ticket_created_by = $session_user_id, ticket_assigned_to = $assigned_to, ticket_url_key = '$url_key', ticket_client_id = $client_id, ticket_project_id = $project_id");
 
             $ticket_id = mysqli_insert_id($mysqli);
-
-            // Update the next ticket number in the database
-            mysqli_query($mysqli, "UPDATE settings SET config_ticket_next_number = $new_config_ticket_next_number WHERE company_id = 1");
 
             // Add Tasks
             if (!empty($_POST['tasks'])) {
@@ -896,8 +1021,8 @@ if (isset($_POST['bulk_send_client_email']) && isset($_POST['client_ids'])) {
     $client_ids_str = implode(',', $client_ids);
 
     // SQL to fetch matching contacts
-    $sql = "SELECT * FROM contacts 
-            WHERE contact_client_id IN ($client_ids_str) 
+    $sql = "SELECT * FROM contacts
+            WHERE contact_client_id IN ($client_ids_str)
             $contact_filter_query";
 
     $result = mysqli_query($mysqli, $sql);
@@ -1056,7 +1181,7 @@ if (isset($_POST["export_client_pdf"])) {
     logAction("Client", "Export", "$session_name exported client data to a PDF file", $client_id, $client_id);
 
     // Get client record (joining primary contact and primary location)
-    $sql = mysqli_query($mysqli, "SELECT * FROM clients 
+    $sql = mysqli_query($mysqli, "SELECT * FROM clients
         LEFT JOIN contacts ON clients.client_id = contacts.contact_client_id AND contact_primary = 1
         LEFT JOIN locations ON clients.client_id = locations.location_client_id AND location_primary = 1
         WHERE client_id = $client_id
@@ -1083,53 +1208,53 @@ if (isset($_POST["export_client_pdf"])) {
     $sql_locations = mysqli_query($mysqli, "SELECT * FROM locations WHERE location_client_id = $client_id AND location_archived_at IS NULL ORDER BY location_name ASC");
     $sql_vendors = mysqli_query($mysqli, "SELECT * FROM vendors WHERE vendor_client_id = $client_id AND vendor_archived_at IS NULL ORDER BY vendor_name ASC");
     $sql_credentials = mysqli_query($mysqli, "SELECT * FROM credentials WHERE credential_client_id = $client_id ORDER BY credential_name ASC");
-    $sql_assets = mysqli_query($mysqli, "SELECT * FROM assets 
-        LEFT JOIN contacts ON asset_contact_id = contact_id 
+    $sql_assets = mysqli_query($mysqli, "SELECT * FROM assets
+        LEFT JOIN contacts ON asset_contact_id = contact_id
         LEFT JOIN locations ON asset_location_id = location_id
         LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
         WHERE asset_client_id = $client_id
         AND asset_archived_at IS NULL
         ORDER BY asset_type ASC"
     );
-    $sql_asset_workstations = mysqli_query($mysqli, "SELECT * FROM assets 
-        LEFT JOIN contacts ON asset_contact_id = contact_id 
-        LEFT JOIN locations ON asset_location_id = location_id 
-        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1 
-        WHERE asset_client_id = $client_id 
-        AND (asset_type = 'desktop' OR asset_type = 'laptop') 
-        AND asset_archived_at IS NULL 
+    $sql_asset_workstations = mysqli_query($mysqli, "SELECT * FROM assets
+        LEFT JOIN contacts ON asset_contact_id = contact_id
+        LEFT JOIN locations ON asset_location_id = location_id
+        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
+        WHERE asset_client_id = $client_id
+        AND (asset_type = 'desktop' OR asset_type = 'laptop')
+        AND asset_archived_at IS NULL
         ORDER BY asset_name ASC"
     );
-    $sql_asset_servers = mysqli_query($mysqli, "SELECT * FROM assets 
-        LEFT JOIN locations ON asset_location_id = location_id 
-        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1 
-        WHERE asset_client_id = $client_id 
-        AND asset_type = 'server' 
-        AND asset_archived_at IS NULL 
+    $sql_asset_servers = mysqli_query($mysqli, "SELECT * FROM assets
+        LEFT JOIN locations ON asset_location_id = location_id
+        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
+        WHERE asset_client_id = $client_id
+        AND asset_type = 'server'
+        AND asset_archived_at IS NULL
         ORDER BY asset_name ASC"
     );
-    $sql_asset_vms = mysqli_query($mysqli, "SELECT * FROM assets 
-        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1 
-        WHERE asset_client_id = $client_id 
-        AND asset_type = 'virtual machine' 
-        AND asset_archived_at IS NULL 
+    $sql_asset_vms = mysqli_query($mysqli, "SELECT * FROM assets
+        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
+        WHERE asset_client_id = $client_id
+        AND asset_type = 'virtual machine'
+        AND asset_archived_at IS NULL
         ORDER BY asset_name ASC"
     );
-    $sql_asset_network = mysqli_query($mysqli, "SELECT * FROM assets 
-        LEFT JOIN locations ON asset_location_id = location_id 
-        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1 
-        WHERE asset_client_id = $client_id 
-        AND (asset_type = 'Firewall/Router' OR asset_type = 'Switch' OR asset_type = 'Access Point') 
-        AND asset_archived_at IS NULL 
+    $sql_asset_network = mysqli_query($mysqli, "SELECT * FROM assets
+        LEFT JOIN locations ON asset_location_id = location_id
+        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
+        WHERE asset_client_id = $client_id
+        AND (asset_type = 'Firewall/Router' OR asset_type = 'Switch' OR asset_type = 'Access Point')
+        AND asset_archived_at IS NULL
         ORDER BY asset_type ASC"
     );
-    $sql_asset_other = mysqli_query($mysqli, "SELECT * FROM assets 
-        LEFT JOIN contacts ON asset_contact_id = contact_id 
-        LEFT JOIN locations ON asset_location_id = location_id 
-        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1 
-        WHERE asset_client_id = $client_id 
-        AND (asset_type NOT LIKE 'laptop' AND asset_type NOT LIKE 'desktop' AND asset_type NOT LIKE 'server' AND asset_type NOT LIKE 'virtual machine' AND asset_type NOT LIKE 'firewall/router' AND asset_type NOT LIKE 'switch' AND asset_type NOT LIKE 'access point') 
-        AND asset_archived_at IS NULL 
+    $sql_asset_other = mysqli_query($mysqli, "SELECT * FROM assets
+        LEFT JOIN contacts ON asset_contact_id = contact_id
+        LEFT JOIN locations ON asset_location_id = location_id
+        LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
+        WHERE asset_client_id = $client_id
+        AND (asset_type NOT LIKE 'laptop' AND asset_type NOT LIKE 'desktop' AND asset_type NOT LIKE 'server' AND asset_type NOT LIKE 'virtual machine' AND asset_type NOT LIKE 'firewall/router' AND asset_type NOT LIKE 'switch' AND asset_type NOT LIKE 'access point')
+        AND asset_archived_at IS NULL
         ORDER BY asset_type ASC"
     );
     $sql_networks = mysqli_query($mysqli, "SELECT * FROM networks WHERE network_client_id = $client_id AND network_archived_at IS NULL ORDER BY network_name ASC");
@@ -1138,38 +1263,38 @@ if (isset($_POST["export_client_pdf"])) {
     $sql_software = mysqli_query($mysqli, "SELECT * FROM software WHERE software_client_id = $client_id AND software_archived_at IS NULL ORDER BY software_name ASC");
 
     $sql_user_licenses = mysqli_query($mysqli, "
-        SELECT 
+        SELECT
             contact_name,
             software_name
-        FROM 
+        FROM
             software_contacts
-        JOIN 
+        JOIN
             contacts ON software_contacts.contact_id = contacts.contact_id
-        JOIN 
+        JOIN
             software ON software_contacts.software_id = software.software_id
         WHERE software_archived_at IS NULL
         AND contact_archived_at IS NULL
         AND software_client_id = $client_id
         AND contact_client_id = $client_id
-        ORDER BY 
+        ORDER BY
             contact_name, software_name;"
     );
 
     $sql_asset_licenses = mysqli_query($mysqli, "
-        SELECT 
+        SELECT
             asset_name,
             software_name
-        FROM 
+        FROM
             software_assets
-        JOIN 
+        JOIN
             assets ON software_assets.asset_id = assets.asset_id
-        JOIN 
+        JOIN
             software ON software_assets.software_id = software.software_id
         WHERE software_archived_at IS NULL
         AND asset_archived_at IS NULL
         AND software_client_id = $client_id
         AND asset_client_id = $client_id
-        ORDER BY 
+        ORDER BY
             asset_name, software_name;"
     );
 

@@ -76,15 +76,29 @@ $allowed_extensions = array('jpg', 'jpeg', 'gif', 'png', 'webp', 'pdf', 'txt', '
 function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message, $attachments, $original_message_file) {
     global $mysqli, $config_app_name, $company_name, $company_phone, $config_ticket_prefix, $config_ticket_client_general_notifications, $config_ticket_new_ticket_notification_email, $config_base_url, $config_ticket_from_name, $config_ticket_from_email, $config_ticket_default_billable, $allowed_extensions;
 
-    $ticket_number_sql = mysqli_fetch_array(mysqli_query($mysqli, "SELECT config_ticket_next_number FROM settings WHERE company_id = 1"));
-    $ticket_number = intval($ticket_number_sql['config_ticket_next_number']);
-    $new_config_ticket_next_number = $ticket_number + 1;
-    mysqli_query($mysqli, "UPDATE settings SET config_ticket_next_number = $new_config_ticket_next_number WHERE company_id = 1");
+    // Atomically increment and get the new ticket number
+    mysqli_query($mysqli, "
+        UPDATE settings
+        SET
+            config_ticket_next_number = LAST_INSERT_ID(config_ticket_next_number),
+            config_ticket_next_number = config_ticket_next_number + 1
+        WHERE company_id = 1
+    ");
+
+    $ticket_number = mysqli_insert_id($mysqli);
 
     // Clean up the message
     $message = trim($message);
+    // Remove DOCTYPE and meta tags
+    $message = preg_replace('/<!DOCTYPE[^>]*>/i', '', $message);
+    $message = preg_replace('/<meta[^>]*>/i', '', $message);
+    // Remove <html>, <head>, <body> and their closing tags
+    $message = preg_replace('/<\/?(html|head|body)[^>]*>/i', '', $message);
+    // Collapse excess whitespace
     $message = preg_replace('/\s+/', ' ', $message);
+    // Convert newlines to <br>
     $message = nl2br($message);
+    // Wrap final formatted message
     $message = "<i>Email from: <b>$contact_name</b> &lt;$contact_email&gt; at $date:-</i> <br><br><div style='line-height:1.5;'>$message</div>";
 
     $ticket_prefix_esc = mysqli_real_escape_string($mysqli, $config_ticket_prefix);
@@ -181,13 +195,37 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
     global $mysqli, $config_app_name, $company_name, $company_phone, $config_ticket_prefix, $config_base_url, $config_ticket_from_name, $config_ticket_from_email, $allowed_extensions;
 
     $ticket_reply_type = 'Client';
-    $message_parts = explode("##- Please type your reply above this line -##", $message);
-    $message_body = $message_parts[0];
-    $message_body = trim($message_body);
-    $message_body = preg_replace('/\r\n|\r|\n/', ' ', $message_body);
-    $message_body = nl2br($message_body);
+    // $message contains the raw HTML body from IMAP
 
-    $message = "<i>Email from: $from_email at $date:-</i> <br><br><div style='line-height:1.5;'>$message_body</div>";
+    // 1) Remove the reply separator and everything below it (HTML-aware)
+    // This matches: <i ...>##- Please type your reply above this line -##</i> and EVERYTHING after it
+    $message = preg_replace(
+        '/<i[^>]*>##-\s*Please\s+type\s+your\s+reply\s+above\s+this\s+line\s*-##<\/i>.*$/is',
+        '',
+        $message
+    );
+
+    // 2) Clean up the remaining message
+
+    // Remove DOCTYPE and meta tags
+    $message = preg_replace('/<!DOCTYPE[^>]*>/i', '', $message);
+    $message = preg_replace('/<meta[^>]*>/i', '', $message);
+
+    // Remove <html>, <head>, <body> and their closing tags
+    $message = preg_replace('/<\/?(html|head|body)[^>]*>/i', '', $message);
+
+    // Trim leading/trailing whitespace
+    $message = trim($message);
+
+    // Normalize line breaks to spaces
+    $message = preg_replace('/\r\n|\r|\n/', ' ', $message);
+
+    // Convert to <br> for HTML display
+    $message = nl2br($message);
+
+    // 3) Final wrapper
+    $message = "<i>Email from: $from_email at $date:-</i><br><br>
+    <div style='line-height:1.5;'>$message</div>";
 
     $ticket_number_esc = intval($ticket_number);
     $message_esc = mysqli_real_escape_string($mysqli, $message);
@@ -598,16 +636,65 @@ foreach ($messages as $message) {
         }
     }
 
-    // Decide whether it's a reply to an existing ticket or a new ticket
+    // 1. Reply to existing ticket with the number in subject
     if (preg_match("/\[$config_ticket_prefix(\d+)\]/", $subject, $ticket_number_matches)) {
         $ticket_number = intval($ticket_number_matches[1]);
-        if (addReply($from_email, $date, $subject, $ticket_number, $message_body, $attachments)) {
-            $email_processed = true;
-        }
-    } else {
-        // Known contact?
+        $email_processed = addReply($from_email, $date, $subject, $ticket_number, $message_body, $attachments);
+    }
+
+    // 2. Fuzzy duplicate check using a known contact/domain and similar_text subject
+    if (!$email_processed && strlen(trim($subject)) > 10) {
+        $contact_id = 0;
+        $client_id  = 0;
+
+        // First: check if sender is a registered contact
         $from_email_esc = mysqli_real_escape_string($mysqli, $from_email);
-        $any_contact_sql = mysqli_query($mysqli, "SELECT * FROM contacts WHERE contact_email = '$from_email_esc' LIMIT 1");
+        $contact_sql = mysqli_query($mysqli, "SELECT * FROM contacts WHERE contact_email = '$from_email_esc' AND contact_archived_at IS NULL LIMIT 1");
+        $contact_row = mysqli_fetch_array($contact_sql);
+
+        if ($contact_row) {
+            $contact_id = intval($contact_row['contact_id']);
+            $client_id  = intval($contact_row['contact_client_id']);
+        } else {
+            // Else: check if sender domain is registered
+            $from_domain_esc = mysqli_real_escape_string($mysqli, $from_domain);
+            $domain_sql = mysqli_query($mysqli, "SELECT * FROM domains WHERE domain_name = '$from_domain_esc' AND domain_archived_at IS NULL LIMIT 1");
+            $domain_row = mysqli_fetch_assoc($domain_sql);
+
+            if ($domain_row && $from_domain == $domain_row['domain_name']) {
+                $client_id = intval($domain_row['domain_client_id']);
+            }
+        }
+
+        // If we found either a contact or a domain, check recent tickets for a matching subject
+        if ($client_id) {
+            $recent_tickets_sql = mysqli_query($mysqli,
+                "SELECT ticket_id, ticket_number, ticket_subject
+                FROM tickets
+                WHERE ticket_client_id = $client_id AND ticket_resolved_at IS NULL
+                AND ticket_created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
+            );
+
+            while ($rowt = mysqli_fetch_assoc($recent_tickets_sql)) {
+                $ticket_number = intval($rowt['ticket_number']);
+                $existing_subject = $rowt['ticket_subject'];
+
+                // Calculate similarity percentage
+                similar_text(strtolower($subject), strtolower($existing_subject), $percent);
+
+                if ($percent >= 95) {
+                    // Treat as a reply/duplicate
+                    $email_processed = addReply($from_email, $date, $subject, $ticket_number, $message_body, $attachments);
+                    break;
+                }
+            }
+        }
+    }
+
+    // 3. A known, registered contact?
+    if (!$email_processed) {
+        $from_email_esc = mysqli_real_escape_string($mysqli, $from_email);
+        $any_contact_sql = mysqli_query($mysqli, "SELECT * FROM contacts WHERE contact_email = '$from_email_esc' AND contact_archived_at IS NULL LIMIT 1");
         $rowc = mysqli_fetch_array($any_contact_sql);
 
         if ($rowc) {
@@ -616,42 +703,40 @@ foreach ($messages as $message) {
             $contact_email = sanitizeInput($rowc['contact_email']);
             $client_id     = intval($rowc['contact_client_id']);
 
-            if (addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file)) {
-                $email_processed = true;
-            }
-        } else {
-            // Known domain?
-            $from_domain_esc = mysqli_real_escape_string($mysqli, $from_domain);
-            $domain_sql = mysqli_query($mysqli, "SELECT * FROM domains WHERE domain_name = '$from_domain_esc' LIMIT 1");
-            $rowd = mysqli_fetch_assoc($domain_sql);
-
-            if ($rowd && $from_domain == $rowd['domain_name']) {
-                $client_id = intval($rowd['domain_client_id']);
-
-                // Create a new contact
-                $contact_name = $from_name;
-                $contact_email = $from_email;
-                mysqli_query($mysqli, "INSERT INTO contacts SET contact_name = '".mysqli_real_escape_string($mysqli, $contact_name)."', contact_email = '".mysqli_real_escape_string($mysqli, $contact_email)."', contact_notes = 'Added automatically via email parsing.', contact_client_id = $client_id");
-                $contact_id = mysqli_insert_id($mysqli);
-
-                // Logging
-                logAction("Contact", "Create", "Email parser: created contact " . mysqli_real_escape_string($mysqli, $contact_name) . "", $client_id, $contact_id);
-                customAction('contact_create', $contact_id);
-
-                if (addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file)) {
-                    $email_processed = true;
-                }
-            } elseif ($config_ticket_email_parse_unknown_senders) {
-                // Unknown sender allowed?
-                $bad_from_pattern = "/daemon|postmaster/i";
-                if (!(preg_match($bad_from_pattern, $from_email))) {
-                    if (addTicket(0, $from_name, $from_email, 0, $date, $subject, $message_body, $attachments, $original_message_file)) {
-                        $email_processed = true;
-                    }
-                }
-            }
+            $email_processed = addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file);
         }
     }
+
+    // 4. A known domain?
+    if (!$email_processed) {
+        $from_domain_esc = mysqli_real_escape_string($mysqli, $from_domain);
+        $domain_sql = mysqli_query($mysqli, "SELECT * FROM domains WHERE domain_name = '$from_domain_esc' AND domain_archived_at IS NULL LIMIT 1");
+        $rowd = mysqli_fetch_assoc($domain_sql);
+
+        if ($rowd && $from_domain == $rowd['domain_name']) {
+            $client_id = intval($rowd['domain_client_id']);
+
+            // Create a new contact
+            $contact_name  = $from_name;
+            $contact_email = $from_email;
+            mysqli_query($mysqli, "INSERT INTO contacts SET contact_name = '".mysqli_real_escape_string($mysqli, $contact_name)."', contact_email = '".mysqli_real_escape_string($mysqli, $contact_email)."', contact_notes = 'Added automatically via email parsing.', contact_client_id = $client_id");
+            $contact_id = mysqli_insert_id($mysqli);
+
+            logAction("Contact", "Create", "Email parser: created contact " . mysqli_real_escape_string($mysqli, $contact_name), $client_id, $contact_id);
+            customAction('contact_create', $contact_id);
+
+            $email_processed = addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file);
+        }
+    }
+
+    // 5. Unknown sender allowed?
+    if (!$email_processed && $config_ticket_email_parse_unknown_senders) {
+        $bad_from_pattern = "/daemon|postmaster/i";
+        if (!preg_match($bad_from_pattern, $from_email)) {
+            $email_processed = addTicket(0, $from_name, $from_email, 0, $date, $subject, $message_body, $attachments, $original_message_file);
+        }
+    }
+
 
     // Flag/move based on processing result
     if ($email_processed) {

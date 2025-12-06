@@ -78,11 +78,11 @@ ob_start();
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-tag"></i></span>
                         </div>
-                        <input 
-                            type="text" 
-                            class="form-control" 
+                        <input
+                            type="text"
+                            class="form-control"
                             name="description"
-                            placeholder="Short Description" 
+                            placeholder="Short Description"
                             maxlength="200"
                         >
                     </div>

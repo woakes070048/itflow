@@ -3,7 +3,6 @@
 require_once '../../../includes/modal_header.php';
 
 $client_id = intval($_GET['client_id'] ?? 0);
-$folder_location = intval($_GET['folder_location'] ?? 0);
 $current_folder_id = intval($_GET['current_folder_id'] ?? 0);
 $folder_name = nullable_htmlentities(getFieldByID('folders', $current_folder_id, 'folder_name') ?? '/');
 
@@ -18,7 +17,6 @@ ob_start();
 </div>
 <form action="post.php" method="post" autocomplete="off">
     <input type="hidden" name="client_id" value="<?= $client_id ?>">
-    <input type="hidden" name="folder_location" value="<?= $folder_location ?>">
     <input type="hidden" name="parent_folder" value="<?= $current_folder_id ?>">
     <div class="modal-body">
 

@@ -68,15 +68,15 @@ if (isset($_POST['upload_files'])) {
             $file_hash = strstr($file_reference_name, '.', true) ?: $file_reference_name;
 
             // Insert file metadata into the database
-            $query = "INSERT INTO files SET 
-                        file_reference_name = '$file_reference_name', 
-                        file_name = '$file_name', 
-                        file_description = '$description', 
+            $query = "INSERT INTO files SET
+                        file_reference_name = '$file_reference_name',
+                        file_name = '$file_name',
+                        file_description = '$description',
                         file_ext = '$file_extension',
-                        file_mime_type = '$file_mime_type', 
-                        file_size = $file_size, 
-                        file_created_by = $session_user_id, 
-                        file_folder_id = $folder_id, 
+                        file_mime_type = '$file_mime_type',
+                        file_size = $file_size,
+                        file_created_by = $session_user_id,
+                        file_folder_id = $folder_id,
                         file_client_id = $client_id";
             mysqli_query($mysqli, $query);
             $file_id = mysqli_insert_id($mysqli);
@@ -90,7 +90,7 @@ if (isset($_POST['upload_files'])) {
             }
 
             logAction("File", "Upload", "$session_name uploaded file $file_name", $client_id, $file_id);
-            
+
             flash_alert("Uploaded file <strong>$file_name</strong>");
         }
     }
@@ -255,46 +255,116 @@ if (isset($_POST['bulk_delete_files'])) {
 
 }
 
+// Unified bulk move for Files + Documents
 if (isset($_POST['bulk_move_files'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-
     enforceUserPermission('module_support', 2);
-    
+
     $folder_id = intval($_POST['bulk_folder_id']);
 
-    // Get folder name for logging and Notification
-    $sql = mysqli_query($mysqli,"SELECT folder_name, folder_client_id FROM folders WHERE folder_id = $folder_id");
-    $row = mysqli_fetch_array($sql);
-    $folder_name = sanitizeInput($row['folder_name']);
-    $client_id = intval($row['folder_client_id']);
+    // Default values (for root or missing folder)
+    $folder_name    = "/";
+    $log_client_id  = 0;
 
-    // Check array for data
-    if (isset($_POST['file_ids'])) {
-        // Get Selected file Count
-        $file_count = count($_POST['file_ids']);
+    // If moving into a real folder, get folder name + client for logging
+    if ($folder_id > 0) {
+        $sql = mysqli_query($mysqli,"SELECT folder_name, folder_client_id FROM folders WHERE folder_id = $folder_id");
+        if ($row = mysqli_fetch_array($sql)) {
+            $folder_name   = sanitizeInput($row['folder_name']);
+            $log_client_id = intval($row['folder_client_id']);
+        }
+    }
 
-        // Move Documents to Folder Loop
-        foreach($_POST['file_ids'] as $file_id) {
-            $file_id = intval($file_id);
-            
+    $file_count     = 0;
+    $document_count = 0;
+
+    // -------------------------
+    // Move FILES (if any)
+    // -------------------------
+    if (!empty($_POST['file_ids']) && is_array($_POST['file_ids'])) {
+
+        $file_ids = array_map('intval', $_POST['file_ids']);
+        $file_count = count($file_ids);
+
+        foreach ($file_ids as $file_id) {
+
             // Get file name for logging
             $file_name = sanitizeInput(getFieldById('files', $file_id, 'file_name'));
 
-            // file move query
+            // Move file
             mysqli_query($mysqli,"UPDATE files SET file_folder_id = $folder_id WHERE file_id = $file_id");
 
-            logAction("File", "Move", "$session_name moved file $file_name to folder $folder_name", $client_id, $file_id);
+            // Per-file log
+            logAction(
+                "File",
+                "Move",
+                "$session_name moved file $file_name to folder $folder_name",
+                $log_client_id,
+                $file_id
+            );
         }
 
-        logAction("File", "Bulk Move", "$session_name moved $file_count file(s) to folder $folder_name", $client_id);
+        // Bulk summary log for files
+        logAction(
+            "File",
+            "Bulk Move",
+            "$session_name moved $file_count file(s) to folder $folder_name",
+            $log_client_id
+        );
+    }
 
-        flash_alert("Moved <strong>$file_count</strong> files to the folder <strong>$folder_name</strong>");
+    // -------------------------
+    // Move DOCUMENTS (if any)
+    // -------------------------
+    if (!empty($_POST['document_ids']) && is_array($_POST['document_ids'])) {
+
+        $document_ids = array_map('intval', $_POST['document_ids']);
+        $document_count = count($document_ids);
+
+        foreach ($document_ids as $document_id) {
+
+            // Get document name for logging
+            $document_name = sanitizeInput(getFieldById('documents', $document_id, 'document_name'));
+
+            // Move document
+            mysqli_query($mysqli,"UPDATE documents SET document_folder_id = $folder_id WHERE document_id = $document_id");
+
+            // Per-document log
+            logAction(
+                "Document",
+                "Move",
+                "$session_name moved document $document_name to folder $folder_name",
+                $log_client_id,
+                $document_id
+            );
+        }
+
+        // Bulk summary log for documents
+        logAction(
+            "Document",
+            "Bulk Move",
+            "$session_name moved $document_count document(s) to folder $folder_name",
+            $log_client_id
+        );
+    }
+
+    // -------------------------
+    // Flash message
+    // -------------------------
+    if ($file_count && $document_count) {
+        flash_alert("Moved <strong>$file_count</strong> file(s) and <strong>$document_count</strong> document(s) to the folder <strong>$folder_name</strong>");
+    } elseif ($file_count) {
+        flash_alert("Moved <strong>$file_count</strong> file(s) to the folder <strong>$folder_name</strong>");
+    } elseif ($document_count) {
+        flash_alert("Moved <strong>$document_count</strong> document(s) to the folder <strong>$folder_name</strong>");
+    } else {
+        flash_alert("No items were moved.");
     }
 
     redirect();
-
 }
+
 
 if (isset($_POST['link_asset_to_file'])) {
 

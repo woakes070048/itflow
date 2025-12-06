@@ -172,7 +172,8 @@ if (isset($_GET['quote_id'])) {
 
                 <?php if ($quote_status == 'Accepted') { ?>
                     <div class="btn-group fix-quote-dropdown">
-                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addQuoteToInvoiceModal<?php echo $quote_id; ?>">
+                        <button type="button" class="btn btn-primary ajax-modal"
+                            data-modal-url="modals/quote/quote_to_invoice.php?quote_id=<?= $quote_id ?>">
                             <i class="fas fa-check mr-2"></i>Invoice
                         </button>
                         <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-toggle="dropdown" aria-expanded="false">
@@ -382,10 +383,10 @@ if (isset($_GET['quote_id'])) {
                                                 <textarea class="form-control" rows="2" name="description" id="desc" placeholder="Enter a Description"></textarea>
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control" inputmode="numeric" pattern="-?[0-9]*\.?[0-9]{0,2}" id="qty" style="text-align: center;" name="qty" placeholder="Qty">
+                                                <input type="text" class="form-control" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" id="qty" style="text-align: center;" name="qty" placeholder="Qty">
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control" inputmode="numeric" pattern="-?[0-9]*\.?[0-9]{0,2}" id="price" style="text-align: right;" name="price" placeholder="Price (<?php echo $quote_currency_code; ?>)">
+                                                <input type="text" class="form-control" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" id="price" style="text-align: right;" name="price" placeholder="Price (<?php echo $quote_currency_code; ?>)">
                                             </td>
                                             <td>
                                                 <select class="form-control select2" id="tax" name="tax_id" required>
@@ -439,7 +440,7 @@ if (isset($_GET['quote_id'])) {
                 </div>
 
                 <div class="col-sm-3 offset-sm-2">
-                    
+
                     <table class="table table-hover mb-0">
                         <tbody>
                             <tr>
@@ -464,7 +465,7 @@ if (isset($_GET['quote_id'])) {
                             </tr>
                         </tbody>
                     </table>
-                    
+
                 </div>
             </div>
 
@@ -571,7 +572,6 @@ if (isset($_GET['quote_id'])) {
     </div>
 
 <?php
-    require_once "modals/quote/quote_to_invoice.php";
     require_once "modals/quote/quote_note.php";
 }
 

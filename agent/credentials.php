@@ -112,13 +112,15 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                 <div class="dropdown-menu">
                     <?php if ($client_url) { ?>
-                    <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#importCredentialModal">
+                    <a class="dropdown-item text-dark ajax-modal" href="#"
+                        data-modal-url="modals/credential/credential_import.php?<?= $client_url ?>">
                         <i class="fa fa-fw fa-upload mr-2"></i>Import
                     </a>
                     <div class="dropdown-divider"></div>
                     <?php } ?>
                     <?php if ($num_rows[0] > 0) { ?>
-                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#exportCredentialModal">
+                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                            data-modal-url="modals/credential/credential_export.php?<?= $client_url ?>">
                             <i class="fa fa-fw fa-download mr-2"></i>Export
                         </a>
                     <?php } ?>
@@ -151,7 +153,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             <?php
                             $sql_tags_filter = mysqli_query($mysqli, "
                                 SELECT tags.tag_id, tags.tag_name
-                                FROM tags 
+                                FROM tags
                                 LEFT JOIN credential_tags ON credential_tags.tag_id = tags.tag_id
                                 LEFT JOIN credentials ON credential_tags.credential_id = credentials.credential_id
                                 WHERE tag_type = 4
@@ -169,7 +171,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         </select>
                     </div>
                 </div>
-                
+
                 <?php if ($client_url) { ?>
                 <div class="col-md-2">
                     <div class="input-group mb-3 mb-md-0">
@@ -198,7 +200,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                             <?php
                             $sql_clients_filter = mysqli_query($mysqli, "
-                                SELECT DISTINCT client_id, client_name 
+                                SELECT DISTINCT client_id, client_name
                                 FROM clients
                                 JOIN credentials ON credential_client_id = client_id
                                 WHERE $archive_query
@@ -357,7 +359,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             }
                             $credential_tags_display = implode('', $credential_tag_name_display_array);
 
-                            if ($credential_contact_id) { 
+                            if ($credential_contact_id) {
                                 $credential_contact_display = "<a href='#' class='mr-2 mb-1 badge badge-pill badge-dark p-2 ajax-modal' title='$contact_name'
                                     data-modal-size='lg'
                                     data-modal-url='modals/contact/contact_details.php?id=$credential_contact_id'>
@@ -366,7 +368,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                 $credential_contact_display = '';
                             }
 
-                            if ($credential_asset_id) { 
+                            if ($credential_asset_id) {
                                 $credential_asset_display = "<a href='#' class='mr-2 mb-1 badge badge-pill badge-secondary p-2 ajax-modal' title='$asset_name' data-toggle=''
                                     data-modal-size='lg'
                                     data-modal-url='modals/asset/asset_details.php?id=$credential_asset_id'>
@@ -528,15 +530,10 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
 <!-- Include script to get TOTP code via the login ID -->
 <script src="js/credential_show_otp_via_id.js"></script>
-<!-- Include script to generate readable passwords for login entries -->
-<script src="js/generate_password.js"></script>
 <script src="../js/bulk_actions.js"></script>
 
 <?php
-
-require_once "modals/credential/credential_export.php";
 if ($client_url) {
-    require_once "modals/credential/credential_import.php";
     require_once "modals/share_modal.php";
 }
 require_once "../includes/footer.php";

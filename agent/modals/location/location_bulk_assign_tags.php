@@ -2,9 +2,9 @@
 
 require_once '../../../includes/modal_header.php';
 
-$selected_ids = array_map('intval', $_GET['selected_ids'] ?? []);
+$location_ids = array_map('intval', $_GET['location_ids'] ?? []);
 
-$count = count($selected_ids);
+$count = count($location_ids);
 
 ob_start();
 
@@ -18,7 +18,7 @@ ob_start();
 </div>
 <form action="post.php" method="post" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-    <?php foreach ($selected_ids as $id) { ?><input type="hidden" name="location_ids[]" value="<?= $id ?>"><?php } ?>
+    <?php foreach ($location_ids as $location_id) { ?><input type="hidden" name="location_ids[]" value="<?= $location_id ?>"><?php } ?>
     <input type="hidden" name="bulk_remove_tags" value="0">
     <div class="modal-body">
 

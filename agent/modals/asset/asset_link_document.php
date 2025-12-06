@@ -37,15 +37,15 @@ ob_start();
                     <option value="">- Select a Document -</option>
                     <?php
                     $sql_documents_select = mysqli_query($mysqli, "
-                        SELECT documents.document_id, documents.document_name
+                        SELECT documents.document_id, document_name
                         FROM documents
                         LEFT JOIN asset_documents
-                        ON documents.document_id = asset_documents.document_id
-                        AND asset_documents.asset_id = $asset_id
-                        WHERE documents.document_client_id = $client_id
-                        AND documents.document_archived_at IS NULL
+                            ON documents.document_id = asset_documents.document_id
+                            AND asset_documents.asset_id = $asset_id
+                        WHERE document_client_id = $client_id
+                        AND document_archived_at IS NULL
                         AND asset_documents.asset_id IS NULL
-                        ORDER BY documents.document_name ASC
+                        ORDER BY document_name ASC
                     ");
                     while ($row = mysqli_fetch_array($sql_documents_select)) {
                         $document_id = intval($row['document_id']);
@@ -67,4 +67,3 @@ ob_start();
 
 <?php
 require_once '../../../includes/modal_footer.php';
-?>

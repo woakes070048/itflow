@@ -38,9 +38,6 @@ if (isset($_GET['account']) & !empty($_GET['account'])) {
     $account_filter = '';
 }
 
-//Rebuild URL
-$url_query_strings_sort = http_build_query($get_copy);
-
 $sql = mysqli_query(
     $mysqli,
     "SELECT SQL_CALC_FOUND_ROWS * FROM payments
@@ -64,7 +61,10 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
             <h3 class="card-title mt-2"><i class="fas fa-fw fa-credit-card mr-2"></i>Payments</h3>
             <?php if ($num_rows[0] > 0) { ?>
             <div class="card-tools">
-                <button type="button" class="btn btn-default" data-toggle="modal" data-target="#exportPaymentModal"><i class="fa fa-fw fa-download mr-2"></i>Export</button>
+                <button type="button" class="btn btn-default ajax-modal"
+                    data-modal-url="modals/payment/payment_export.php?<?= $client_url ?>">
+                    <i class="fa fa-fw fa-download mr-2"></i>Export
+                </button>
             </div>
             <?php } ?>
         </div>
@@ -256,9 +256,9 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                             </td>
                         </tr>
 
-                    <?php 
-                    
-                    } 
+                    <?php
+
+                    }
 
                     ?>
 
@@ -270,5 +270,4 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
     </div>
 
 <?php
-require_once "modals/payment/payment_export.php";
 require_once "../includes/footer.php";

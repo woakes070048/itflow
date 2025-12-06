@@ -175,7 +175,7 @@ if (isset($_GET['delete_certificate'])) {
 if (isset($_POST['bulk_delete_certificates'])) {
 
     validateCSRFToken($_POST['csrf_token']);
-    
+
     enforceUserPermission('module_support', 3);
 
     if (isset($_POST['certificate_ids'])) {
@@ -214,7 +214,7 @@ if (isset($_POST['export_certificates_csv'])) {
 
     enforceUserPermission('module_support');
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND certificate_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');

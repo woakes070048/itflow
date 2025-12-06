@@ -39,7 +39,7 @@ if (isset($_POST['edit_trip'])) {
 }
 
 if (isset($_GET['delete_trip'])) {
-    
+
     $trip_id = intval($_GET['delete_trip']);
 
     // Get Trip Info and Client ID for logging
@@ -60,7 +60,7 @@ if (isset($_GET['delete_trip'])) {
 
 if (isset($_POST['export_trips_csv'])) {
 
-    if (isset($_POST['client_id'])) {
+    if ($_POST['client_id']) {
         $client_id = intval($_POST['client_id']);
         $client_query = "AND trip_client_id = $client_id";
         $client_name = getFieldById('clients', $client_id, 'client_name');
@@ -70,7 +70,7 @@ if (isset($_POST['export_trips_csv'])) {
         $client_name = '';
         $file_name_prepend = "$session_company_name-";
     }
-    
+
     $date_from = sanitizeInput($_POST['date_from']);
     $date_to = sanitizeInput($_POST['date_to']);
     if (!empty($date_from) && !empty($date_to)){
@@ -82,7 +82,7 @@ if (isset($_POST['export_trips_csv'])) {
     }
 
     //get records from database
-    $sql = mysqli_query($mysqli,"SELECT * FROM trips 
+    $sql = mysqli_query($mysqli,"SELECT * FROM trips
         LEFT JOIN clients ON trip_client_id = client_id
         WHERE $date_query
         $client_query
@@ -119,7 +119,7 @@ if (isset($_POST['export_trips_csv'])) {
 
         //output all remaining data on a file pointer
         fpassthru($f);
-    
+
         logAction("Trip", "Export", "$session_name exported $count trip(s) to a CSV file");
     }
     exit;

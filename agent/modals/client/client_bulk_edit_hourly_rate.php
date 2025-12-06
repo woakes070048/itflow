@@ -2,9 +2,9 @@
 
 require_once '../../../includes/modal_header.php';
 
-$selected_ids = array_map('intval', $_GET['selected_ids'] ?? []);
+$client_ids = array_map('intval', $_GET['client_ids'] ?? []);
 
-$count = count($selected_ids);
+$count = count($client_ids);
 
 ob_start();
 
@@ -19,7 +19,7 @@ ob_start();
 
 <form action="post.php" method="post" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-    <?php foreach ($selected_ids as $id) { ?><input type="hidden" name="client_ids[]" value="<?= $id ?>"><?php } ?>
+    <?php foreach ($client_ids as $client_id) { ?><input type="hidden" name="client_ids[]" value="<?= $client_id ?>"><?php } ?>
 
     <div class="modal-body">
 
@@ -29,7 +29,7 @@ ob_start();
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fa fa-fw fa-clock"></i></span>
                 </div>
-                <input type="text" class="form-control" inputmode="numeric" pattern="[0-9]*\.?[0-9]{0,2}" name="bulk_rate" placeholder="0.00" required>
+                <input type="text" class="form-control" inputmode="decimal" pattern="[0-9]*\.?[0-9]{0,2}" name="bulk_rate" placeholder="0.00" required>
             </div>
         </div>
 

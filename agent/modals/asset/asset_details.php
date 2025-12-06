@@ -380,7 +380,7 @@ ob_start();
 
                 // Send a POST request to ajax.php as ajax.php with data contact_set_notes=true, contact_id=NUM, notes=NOTES
                 jQuery.post(
-                    "../ajax.php",
+                    "ajax.php",
                     {
                         asset_set_notes: 'TRUE',
                         asset_id: asset_id,

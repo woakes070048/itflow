@@ -2,8 +2,8 @@
 
 require_once '../../../includes/modal_header.php';
 
-$selected_ids = array_map('intval', $_GET['selected_ids'] ?? []);
-$count = count($selected_ids);
+$asset_ids = array_map('intval', $_GET['asset_ids'] ?? []);
+$count = count($asset_ids);
 
 $client_id = intval($_GET['client_id'] ?? 0);
 if ($client_id) {
@@ -25,7 +25,7 @@ ob_start();
 
 <form action="post.php" method="post" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-    <?php foreach ($selected_ids as $id) { ?><input type="hidden" name="asset_ids[]" value="<?= $id ?>"><?php } ?>
+    <?php foreach ($asset_ids as $asset_id) { ?><input type="hidden" name="asset_ids[]" value="<?= $asset_id ?>"><?php } ?>
 
     <div class="modal-body">
 
@@ -39,7 +39,7 @@ ob_start();
                     <option value="">- Select Client -</option>
                     <?php
                         $clients_sql = mysqli_query($mysqli, "SELECT client_id, client_name FROM clients WHERE client_archived_at IS NULL $client_select_query");
-                
+
                         while ($row = mysqli_fetch_array($clients_sql)) {
                             $client_id_select = intval($row["client_id"]);
                             $client_name_select = nullable_htmlentities($row["client_name"]);

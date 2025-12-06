@@ -2,6 +2,39 @@
 
 This file documents all notable changes made to ITFlow.
 
+## [25.12] Stable Release
+
+### Breaking Changes ###
+- For Existing installs: **php-xml** extension needs to be installed for document creation and editing, new install script does this for you as of Dec 6th 2025. To install php-xml: `sudo apt install php-xml`
+
+### Major Changes
+- Consolidated "Files" and "Documents" into a single section called **Files**.
+
+### Bug Fixes
+- Resolved issue with updating asset notes in asset details.
+- Fixed problem with bulk ticket merging.
+- Corrected issue where decimal inputs (e.g., price, cost) weren’t displaying on iPhones in certain forms.
+- Added CSV escaping to the sample export data in areas where a sample CSV template is provided.
+- Fix a race condition where dupe tickets, invoices, recurring invoices, recurring tickets, quotes will be created using the same number if created in parallel espcecially when using the API.
+
+### New Features & Updates
+- Introduced automatic subject-based ticket merging/reply detection. Now, if an email comes from a known contact or domain and the subject matches 95% of a ticket opened in the last 7 days, it will be merged automatically.
+- Added `cleanInput` function to sanitize data before inserting it into the database when using MySQLi prepared statements.
+- Migrated client post functionality to use MySQLi prepared statements.
+- Updated payment method post functionality to use MySQLi prepared statements.
+- Implemented `saveBase64Images()` to convert base64-encoded `<img>` tags into actual image files stored under `/uploads/<module>/<id>/` with secure filenames. Added wrapper functions, and updated document creation to use processed image paths.
+- For new documents and document templates, images are now stored in `/uploads/documents/$document_id` instead of being stored as base64 in the database, using the `saveBase64Images()` function.
+- UI/UX improvements made to the document details page.
+- Removed sidebar quick-add options.
+- Created new folders in the uploads directory: `documents`, `document_templates`, and `recurring_tickets`.
+- Reworked the bulk action function to pass the name arrays, instead of a generic `selected_ids` array. This allows multiple bulk name arrays to be passed at once, currently used for the new file-document merge.
+- Big task: Converted the remaining modals to use the new `ajax-modal` system, enabling more flexible flow expansion going forward.
+- Mail queue: Added a `--no-mx-validation` flag to bypass recipient domain MX validation.
+- Bump PHPMailer from 7.0.0 to 7.0.1.
+- Bump stripe-php from 18.1.0 to 19.0.0.
+- Bump TCPDF from 6.10.0 to 6.10.1.
+- Bump TinyMCE from 8.2.0 to 8.2.2.
+
 ## [25.11.1] Maint Release
 
 ### Fixes

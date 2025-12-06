@@ -17,7 +17,7 @@ if (isset($_GET['document_id'])) {
 
 $folder_location = 0;
 
-$sql_document = mysqli_query($mysqli, "SELECT * FROM documents 
+$sql_document = mysqli_query($mysqli, "SELECT * FROM documents
     LEFT JOIN folders ON document_folder_id = folder_id
     LEFT JOIN users ON document_created_by = user_id
     WHERE document_client_id = $client_id AND document_id = $document_id
@@ -51,10 +51,10 @@ $page_title = $row['document_name'];
 
 <ol class="breadcrumb d-print-none">
     <li class="breadcrumb-item">
-        <a href="client_overview.php?client_id=<?php echo $client_id; ?>"><?php echo $client_name; ?></a>
+        <a href="client_overview.php?client_id=<?= $client_id ?>"><?= $client_name ?></a>
     </li>
     <li class="breadcrumb-item">
-        <a href="documents.php?client_id=<?php echo $client_id; ?>">Documents</a>
+        <a href="files.php?client_id=<?= $client_id ?>">Files</a>
     </li>
     <?php
     // Build the full folder path
@@ -84,7 +84,7 @@ $page_title = $row['document_name'];
         $bread_crumb_folder_name = $folder['folder_name']; // Sanitized before put in array
         ?>
         <li class="breadcrumb-item">
-            <a href="documents.php?client_id=<?php echo $client_id; ?>&folder_id=<?php echo $bread_crumb_folder_id; ?>">
+            <a href="files.php?client_id=<?php echo $client_id; ?>&folder_id=<?php echo $bread_crumb_folder_id; ?>">
                 <i class="fas fa-fw fa-folder-open mr-2"></i><?php echo $bread_crumb_folder_name; ?>
             </a>
         </li>
@@ -92,9 +92,9 @@ $page_title = $row['document_name'];
     }
     ?>
     <li class="breadcrumb-item active">
-        <i class="fas fa-file"></i> <?php echo $document_name; ?> 
-        <?php if (!empty($document_archived_at)) { 
-            echo "<span class='text-danger ml-2'>(ARCHIVED on $document_archived_at)</span>"; 
+        <i class="fas fa-file"></i> <?php echo $document_name; ?>
+        <?php if (!empty($document_archived_at)) {
+            echo "<span class='text-danger ml-2'>(ARCHIVED on $document_archived_at)</span>";
         } ?>
     </li>
 </ol>
@@ -104,18 +104,31 @@ $page_title = $row['document_name'];
     <div class="col-md-9">
         <div class="card">
             <div class="card-header bg-dark">
-
-                <h3><?php echo $document_name; ?> <?php if (!empty($document_description)) { ?><span class="h6 text-muted">(<?php echo $document_description; ?>)</span><?php } ?></h3>
-
                 <div class="row">
-                    <div class="col"><strong>Date:</strong> <?php echo date('Y-m-d', strtotime($document_created_at)); ?></div>
-                    <?php if(!empty($document_created_by_name)){ ?>
-                    <div class="col"><strong>Prepared By:</strong> <?php echo $document_created_by_name; ?></div>
-                    <?php } ?>
+                    <div class="col">
+                        <div class="h4 mb-0"><?= $document_name ?></div>
+                        <?php if ($document_description) { ?>
+                        <div class="text-light"><?= $document_description ?></div>
+                        <?php } ?>
+                    </div>
+                    <div class="col">
+                        <div class="float-right">
+                            <div>
+                                Date:
+                                <strong><?= date('Y-m-d', strtotime($document_created_at)); ?></strong>
+                            </div>
+                            <?php if($document_created_by_name) { ?>
+                            <div>
+                                Prepared By:
+                                <strong><?= $document_created_by_name ?></strong>
+                            </div>
+                            <?php } ?>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card-body prettyContent">
-                <?php echo $document_content; ?>
+                <?= $document_content ?>
                 <hr>
                 <h4>Documentation Revision History</h4>
 
@@ -151,15 +164,15 @@ $page_title = $row['document_name'];
 
                         ?>
                         <tr>
-                            <td><?php echo $document_version_count; ?></td>
-                            <td><?php echo $document_version_created_date; ?></td>
-                            <td><?php echo $document_version_name; ?></td>
-                            <td><?php echo $document_version_description_display; ?></td>
-                            <td><?php echo $document_version_author; ?></td>
+                            <td><?= $document_version_count ?></td>
+                            <td><?= $document_version_created_date ?></td>
+                            <td><?= $document_version_name ?></td>
+                            <td><?= $document_version_description_display ?></td>
+                            <td><?= $document_version_author ?></td>
                         </tr>
-                        <?php 
+                        <?php
                         $document_version_count++; // Increment the counter
-                        } 
+                        }
                         ?>
                     </tbody>
                 </table>
@@ -176,10 +189,10 @@ $page_title = $row['document_name'];
                     <i class="fas fa-fw fa-edit" title="Edit"></i>
                 </button>
                 <button type="button" class="btn btn-secondary mr-1" data-toggle="modal" data-target="#shareModal"
-                    onclick="populateShareModal(<?php echo "$client_id, 'Document', $document_id"; ?>)">
+                    onclick="populateShareModal(<?= "$client_id, 'Document', $document_id"; ?>)">
                     <i class="fas fa-fw fa-share" title="Share"></i>
                 </button>
-                <a class="btn btn-success mr-1" href="post.php?export_document=<?php echo $document_id; ?>"><i class='fas fa-fw fa-file-pdf' title="PDF Export"></i></a>
+                <a class="btn btn-success mr-1" href="post.php?export_document=<?= $document_id ?>"><i class='fas fa-fw fa-file-pdf' title="PDF Export"></i></a>
                 <button type="button" class="btn btn-secondary mr-4" onclick="window.print();"><i class="fas fa-fw fa-print" title="Print"></i></button>
                 <a class="btn btn-warning mr-1 confirm-link" href="post.php?archive_document=<?= $document_id ?>" title="Archive"><i class='fas fa-fw fa-archive'></i></a>
                 <a class="btn btn-danger confirm-link" href="post.php?delete_document=<?= $document_id ?>&from=document_details" title="Delete"><i class='fas fa-fw fa-trash-alt'></i></a>
@@ -189,13 +202,14 @@ $page_title = $row['document_name'];
             <h5 class="mb-3"><i class="fas fa-tags mr-2"></i>Related Items</h5>
             <h6>
                 <i class="fas fa-fw fa-paperclip text-secondary mr-2"></i>Files
-                <button type="button" class="btn btn-link btn-sm" data-toggle="modal" data-target="#linkFileToDocumentModal">
+                <button type="button" class="btn btn-link btn-sm ajax-modal"
+                    data-modal-url="modals/document/document_link_file.php?document_id=<?= $document_id ?>">
                     <i class="fas fa-fw fa-plus"></i>
                 </button>
             </h6>
             <?php
             $sql_files = mysqli_query($mysqli, "SELECT * FROM files, document_files
-                WHERE document_files.file_id = files.file_id 
+                WHERE document_files.file_id = files.file_id
                 AND document_files.document_id = $document_id
                 ORDER BY file_name ASC"
             );
@@ -211,9 +225,9 @@ $page_title = $row['document_name'];
 
                 ?>
                 <div class="ml-2">
-                    <a href="files.php?client_id=<?php echo $client_id; ?>&folder_id=<?php echo $folder_id; ?>&q=<?php echo $file_name; ?>" target="_blank"><?php echo $file_name; ?></a>
-                    <a class="confirm-link" href="post.php?unlink_file_from_document&file_id=<?php echo $file_id; ?>&document_id=<?php echo $document_id; ?>">
-                        <i class="fas fa-fw fa-trash-alt text-secondary float-right"></i>
+                    <a href="files.php?client_id=<?= $client_id ?>&folder_id=<?= $folder_id ?>&q=<?= $file_name ?>" target="_blank"><?= $file_name ?></a>
+                    <a class="confirm-link" href="post.php?unlink_file_from_document&file_id=<?= $file_id ?>&document_id=<?= $document_id ?>">
+                        <i class="fas fa-fw fa-unlink text-secondary float-right" title="Unlink File"></i>
                     </a>
                 </div>
                 <?php
@@ -221,13 +235,14 @@ $page_title = $row['document_name'];
                 ?>
             <h6>
                 <i class="fas fa-fw fa-users text-secondary mt-3 mr-2"></i>Contacts
-                <button type="button" class="btn btn-link btn-sm" data-toggle="modal" data-target="#linkContactToDocumentModal">
+                <button type="button" class="btn btn-link btn-sm ajax-modal"
+                    data-modal-url="modals/document/document_link_contact.php?document_id=<?= $document_id ?>">
                     <i class="fas fa-fw fa-plus"></i>
                 </button>
             </h6>
             <?php
             $sql_contacts = mysqli_query($mysqli, "SELECT contacts.contact_id, contact_name FROM contacts, contact_documents
-                WHERE contacts.contact_id = contact_documents.contact_id 
+                WHERE contacts.contact_id = contact_documents.contact_id
                 AND contact_documents.document_id = $document_id
                 ORDER BY contact_name ASC"
             );
@@ -247,7 +262,7 @@ $page_title = $row['document_name'];
                         data-modal-url="modals/contact/contact_details.php?id=<?= $contact_id ?>">
                         <?php echo $contact_name; ?></a>
                     <a class="confirm-link float-right" href="post.php?unlink_contact_from_document&contact_id=<?php echo $contact_id; ?>&document_id=<?php echo $document_id; ?>">
-                        <i class="fas fa-fw fa-trash-alt text-secondary"></i>
+                        <i class="fas fa-fw fa-unlink text-secondary" title="Unlink Contact"></i>
                     </a>
                 </div>
                 <?php
@@ -255,7 +270,7 @@ $page_title = $row['document_name'];
                 ?>
             <h6>
                 <i class="fas fa-fw fa-laptop text-secondary mr-2 mt-3"></i>Assets
-                <button type="button" class="btn btn-link btn-sm" data-toggle="modal" data-target="#linkAssetToDocumentModal">
+                <button type="button" class="btn btn-link btn-sm ajax-modal" data-modal-url="modals/document/document_link_asset.php?document_id=<?= $document_id ?>">
                     <i class="fas fa-fw fa-plus"></i>
                 </button>
             </h6>
@@ -282,7 +297,7 @@ $page_title = $row['document_name'];
                         <?php echo $asset_name; ?>
                     </a>
                     <a class="confirm-link float-right" href="post.php?unlink_asset_from_document&asset_id=<?php echo $asset_id; ?>&document_id=<?php echo $document_id; ?>">
-                        <i class="fas fa-fw fa-trash-alt text-secondary"></i>
+                        <i class="fas fa-fw fa-unlink text-secondary" title="Unlink Asset"></i>
                     </a>
                 </div>
             <?php
@@ -290,13 +305,14 @@ $page_title = $row['document_name'];
             ?>
             <h6>
                 <i class="fas fa-fw fa-cube text-secondary mr-2 mt-3"></i>Licenses
-                <button type="button" class="btn btn-link btn-sm" data-toggle="modal" data-target="#linkSoftwareToDocumentModal">
+                <button type="button" class="btn btn-link btn-sm ajax-modal"
+                    data-modal-url="modals/document/document_link_software.php?document_id=<?= $document_id ?>">
                     <i class="fas fa-fw fa-plus"></i>
                 </button>
             </h6>
             <?php
             $sql_software = mysqli_query($mysqli, "SELECT software.software_id, software_name FROM software, software_documents
-                WHERE software.software_id = software_documents.software_id 
+                WHERE software.software_id = software_documents.software_id
                 AND software_documents.document_id = $document_id
                 ORDER BY software_name ASC"
             );
@@ -313,7 +329,7 @@ $page_title = $row['document_name'];
                 <div class="ml-2">
                     <a href="software.php?client_id=<?php echo $client_id; ?>&q=<?php echo $software_name; ?>" target="_blank"><?php echo $software_name; ?></a>
                     <a class="confirm-link float-right" href="post.php?unlink_software_from_document&software_id=<?php echo $software_id; ?>&document_id=<?php echo $document_id; ?>">
-                        <i class="fas fa-fw fa-trash-alt text-secondary"></i>
+                        <i class="fas fa-fw fa-unlink text-secondary" title="Unlink License"></i>
                     </a>
                 </div>
                 <?php
@@ -321,13 +337,14 @@ $page_title = $row['document_name'];
                 ?>
             <h6>
                 <i class="fas fa-fw fa-building text-secondary mr-2 mt-3"></i>Vendors
-                <button type="button" class="btn btn-link btn-sm" data-toggle="modal" data-target="#linkVendorToDocumentModal">
+                <button type="button" class="btn btn-link btn-sm ajax-modal"
+                    data-modal-url="modals/document/document_link_vendor.php?document_id=<?= $document_id ?>">
                     <i class="fas fa-fw fa-plus"></i>
                 </button>
             </h6>
             <?php
             $sql_vendors = mysqli_query($mysqli, "SELECT vendors.vendor_id, vendor_name FROM vendors, vendor_documents
-                WHERE vendors.vendor_id = vendor_documents.vendor_id 
+                WHERE vendors.vendor_id = vendor_documents.vendor_id
                 AND vendor_documents.document_id = $document_id
                 ORDER BY vendor_name ASC"
             );
@@ -343,10 +360,10 @@ $page_title = $row['document_name'];
                 ?>
                 <div class="ml-2">
                     <a class="ajax-modal" href="#" data-modal-url="modals/vendor/vendor_details.php?id=<?= $vendor_id ?>">
-                        <?php echo $vendor_name; ?>        
+                        <?php echo $vendor_name; ?>
                     </a>
                     <a class="confirm-link float-right" href="post.php?unlink_vendor_from_document&vendor_id=<?php echo $vendor_id; ?>&document_id=<?php echo $document_id; ?>">
-                        <i class="fas fa-fw fa-trash-alt text-secondary"></i>
+                        <i class="fas fa-fw fa-unlink text-secondary" title="Unlink Vendor"></i>
                     </a>
                 </div>
             <?php
@@ -359,7 +376,8 @@ $page_title = $row['document_name'];
                 <h6><i class="fas fa-handshake mr-2"></i>Portal Collaboration</h6>
                 <div class="mt-1">
                     <i class="fa fa-fw fa-eye<?php if (!$document_client_visible) { echo '-slash'; } ?> text-secondary mr-2"></i>Document is
-                    <a href="#" data-toggle="modal" data-target="#editDocumentClientVisibileModal">
+                    <a class="ajax-modal" href="#"
+                        data-modal-url="modals/document/document_edit_visibility.php?document_id=<?= $document_id ?>">
                         <?php
                         if ($document_client_visible) {
                             echo "<span class='text-bold text-dark'>visible</span>";
@@ -414,11 +432,5 @@ $page_title = $row['document_name'];
 
 <?php
 
-require_once "modals/document/document_link_file.php";
-require_once "modals/document/document_link_contact.php";
-require_once "modals/document/document_link_asset.php";
-require_once "modals/document/document_link_software.php";
-require_once "modals/document/document_link_vendor.php";
-require_once "modals/document/document_edit_visibility.php";
 require_once "modals/share_modal.php";
 require_once "../includes/footer.php";

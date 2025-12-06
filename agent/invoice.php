@@ -162,7 +162,7 @@ if (isset($_GET['invoice_id'])) {
 
     //Product autocomplete
     $products_sql = mysqli_query($mysqli, "
-        SELECT 
+        SELECT
             CONCAT(product_code, ' - ', product_name) AS label,
             product_name,
             product_code,
@@ -190,7 +190,7 @@ if (isset($_GET['invoice_id'])) {
     // Saved Payment Methods
     $sql_saved_payment_methods = mysqli_query($mysqli, "
         SELECT * FROM client_saved_payment_methods
-        LEFT JOIN payment_providers 
+        LEFT JOIN payment_providers
             ON client_saved_payment_methods.saved_payment_provider_id = payment_providers.payment_provider_id
         WHERE saved_payment_client_id = $client_id
         AND payment_provider_active = 1;
@@ -245,7 +245,7 @@ if (isset($_GET['invoice_id'])) {
                                     <?php if (mysqli_num_rows($sql_saved_payment_methods) > 0 && ($invoice_status === 'Sent' || $invoice_status === 'Viewed')) { ?>
                                     <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
                                     <div class="dropdown-menu">
-                                        <a class="dropdown-item ajax-modal" href="#" data-modal-url="modals/payment/payment_saved_method_add.php?id=<?= $invoice_id ?>"><i class="fas fa-fw fa-wallet mr-2"></i>Pay with Saved Card</a>                                    
+                                        <a class="dropdown-item ajax-modal" href="#" data-modal-url="modals/payment/payment_saved_method_add.php?id=<?= $invoice_id ?>"><i class="fas fa-fw fa-wallet mr-2"></i>Pay with Saved Card</a>
                                     </div>
                                     <?php } ?>
 
@@ -277,7 +277,8 @@ if (isset($_GET['invoice_id'])) {
                                     data-modal-url="modals/invoice/invoice_copy.php?id=<?= $invoice_id ?>">
                                     <i class="fa fa-fw fa-copy text-secondary mr-2"></i>Copy
                                 </a>
-                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#addInvoiceRecurringModal<?php echo $invoice_id; ?>">
+                                <a class="dropdown-item ajax-modal" href="#"
+                                    data-modal-url="modals/invoice/invoice_recurring_add.php?invoice_id=<?= $invoice_id ?>">
                                     <i class="fa fa-fw fa-sync-alt text-secondary mr-2"></i>Recurring
                                 </a>
                                 <div class="dropdown-divider"></div>
@@ -456,10 +457,10 @@ if (isset($_GET['invoice_id'])) {
                                             <textarea class="form-control" rows="2" id="desc" name="description" placeholder="Enter a Description"></textarea>
                                         </td>
                                         <td>
-                                            <input type="text" inputmode="numeric" pattern="[0-9]*\.?[0-9]{0,2}" class="form-control" style="text-align: center;" id="qty" name="qty" placeholder="Qty">
+                                            <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]{0,2}" class="form-control" style="text-align: center;" id="qty" name="qty" placeholder="Qty">
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control" inputmode="numeric" pattern="-?[0-9]*\.?[0-9]{0,2}" style="text-align: right;" id="price" name="price" placeholder="Price (<?php echo $invoice_currency_code; ?>)">
+                                            <input type="text" class="form-control" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" style="text-align: right;" id="price" name="price" placeholder="Price (<?php echo $invoice_currency_code; ?>)">
                                         </td>
                                         <td>
                                             <select class="form-control select2" name="tax_id" id="tax" required>
@@ -725,7 +726,6 @@ if (isset($_GET['invoice_id'])) {
         </div>
     <?php
     include_once "modals/invoice/invoice_add_ticket.php";
-    include_once "modals/invoice/invoice_recurring_add.php";
     include_once "modals/invoice/invoice_note.php";
 
 }

@@ -5,7 +5,7 @@ require_once '../../../includes/modal_header.php';
 $document_id = intval($_GET['id']);
 
 $sql = mysqli_query($mysqli, "SELECT * FROM documents WHERE document_id = $document_id LIMIT 1");
-                     
+
 $row = mysqli_fetch_array($sql);
 $document_name = nullable_htmlentities($row['document_name']);
 $document_description = nullable_htmlentities($row['document_description']);
@@ -45,7 +45,7 @@ ob_start();
                 <select class="form-control select2" name="folder">
                     <option value="0">/</option>
                     <?php
-                    $sql_folders_select = mysqli_query($mysqli, "SELECT * FROM folders WHERE folder_location = 0 AND folder_client_id = $client_id ORDER BY folder_name ASC");
+                    $sql_folders_select = mysqli_query($mysqli, "SELECT * FROM folders WHERE folder_client_id = $client_id ORDER BY folder_name ASC");
                     while ($row = mysqli_fetch_array($sql_folders_select)) {
                         $folder_id_select = intval($row['folder_id']);
                         $folder_name_select = nullable_htmlentities($row['folder_name']);

@@ -15,8 +15,8 @@ if (isset($_GET['asset_id'])) {
     $asset_id = intval($_GET['asset_id']);
 
     $sql = mysqli_query($mysqli, "SELECT * FROM assets
-        LEFT JOIN clients ON client_id = asset_client_id 
-        LEFT JOIN contacts ON asset_contact_id = contact_id 
+        LEFT JOIN clients ON client_id = asset_client_id
+        LEFT JOIN contacts ON asset_contact_id = contact_id
         LEFT JOIN locations ON asset_location_id = location_id
         LEFT JOIN asset_interfaces ON interface_asset_id = asset_id AND interface_primary = 1
         WHERE asset_id = $asset_id
@@ -101,7 +101,7 @@ if (isset($_GET['asset_id'])) {
         $ticket_count = mysqli_num_rows($sql_related_tickets);
 
         // Related Recurring Tickets Query
-        $sql_related_recurring_tickets = mysqli_query($mysqli, "SELECT recurring_tickets.* FROM recurring_tickets 
+        $sql_related_recurring_tickets = mysqli_query($mysqli, "SELECT recurring_tickets.* FROM recurring_tickets
             LEFT JOIN recurring_ticket_assets ON recurring_tickets.recurring_ticket_id = recurring_ticket_assets.recurring_ticket_id
             WHERE recurring_ticket_asset_id = $asset_id OR recurring_ticket_assets.asset_id = $asset_id
             GROUP BY recurring_tickets.recurring_ticket_id
@@ -110,10 +110,10 @@ if (isset($_GET['asset_id'])) {
         $recurring_ticket_count = mysqli_num_rows($sql_related_recurring_tickets);
 
         // Related Documents
-        $sql_related_documents = mysqli_query($mysqli, "SELECT * FROM asset_documents 
+        $sql_related_documents = mysqli_query($mysqli, "SELECT * FROM asset_documents
             LEFT JOIN documents ON asset_documents.document_id = documents.document_id
-            WHERE asset_documents.asset_id = $asset_id 
-            AND document_archived_at IS NULL 
+            WHERE asset_documents.asset_id = $asset_id
+            AND document_archived_at IS NULL
             ORDER BY document_name DESC"
         );
         $document_count = mysqli_num_rows($sql_related_documents);
@@ -142,7 +142,7 @@ if (isset($_GET['asset_id'])) {
 
         // Network Interfaces
         $sql_related_interfaces = mysqli_query($mysqli, "
-            SELECT 
+            SELECT
                 ai.interface_id,
                 ai.interface_name,
                 ai.interface_description,
@@ -173,7 +173,7 @@ if (isset($_GET['asset_id'])) {
               )
             LEFT JOIN assets AS connected_assets
               ON connected_assets.asset_id = connected_interfaces.interface_asset_id
-            WHERE 
+            WHERE
                 ai.interface_asset_id = $asset_id
                 AND ai.interface_archived_at IS NULL
             ORDER BY ai.interface_name ASC
@@ -182,7 +182,7 @@ if (isset($_GET['asset_id'])) {
         $interface_count = mysqli_num_rows($sql_related_interfaces);
 
         // Related Files
-        $sql_related_files = mysqli_query($mysqli, "SELECT * FROM asset_files 
+        $sql_related_files = mysqli_query($mysqli, "SELECT * FROM asset_files
             LEFT JOIN files ON asset_files.file_id = files.file_id
             WHERE asset_files.asset_id = $asset_id
             AND file_archived_at IS NULL
@@ -204,7 +204,7 @@ if (isset($_GET['asset_id'])) {
         // Related Documents
         $sql_related_documents = mysqli_query($mysqli, "SELECT * FROM asset_documents, documents
             LEFT JOIN users ON document_created_by = user_id
-            WHERE asset_documents.asset_id = $asset_id 
+            WHERE asset_documents.asset_id = $asset_id
             AND asset_documents.document_id = documents.document_id
             AND document_archived_at IS NULL
             ORDER BY document_name ASC"
@@ -214,7 +214,7 @@ if (isset($_GET['asset_id'])) {
 
         // Related Credentials Query
         $sql_related_credentials = mysqli_query($mysqli, "
-            SELECT 
+            SELECT
                 credentials.credential_id AS credential_id,
                 credentials.credential_name,
                 credentials.credential_description,
@@ -239,8 +239,8 @@ if (isset($_GET['asset_id'])) {
         // Related Software Query
         $sql_related_software = mysqli_query(
             $mysqli,
-            "SELECT * FROM software_assets 
-            LEFT JOIN software ON software_assets.software_id = software.software_id 
+            "SELECT * FROM software_assets
+            LEFT JOIN software ON software_assets.software_id = software.software_id
             WHERE software_assets.asset_id = $asset_id
             AND software_archived_at IS NULL
             ORDER BY software_name DESC"
@@ -250,7 +250,7 @@ if (isset($_GET['asset_id'])) {
 
         // Linked Services
         $sql_linked_services = mysqli_query($mysqli, "SELECT * FROM service_assets, services
-            WHERE service_assets.asset_id = $asset_id 
+            WHERE service_assets.asset_id = $asset_id
             AND service_assets.service_id = services.service_id
             ORDER BY service_name ASC"
         );
@@ -283,7 +283,7 @@ if (isset($_GET['asset_id'])) {
                             <div>
                                 <?= $asset_tags_display ?>
                             </div>
-                        <?php } ?>   
+                        <?php } ?>
                         <?php if ($asset_type) { ?>
                             <div class="mt-1"><i class="fa fa-fw fa-tag text-secondary mr-3"></i><?= $asset_type; ?></div>
                         <?php }
@@ -469,11 +469,15 @@ if (isset($_GET['asset_id'])) {
                                         <i class="fas fa-fw fa-layer-group mr-2"></i>Bulk Action (<span id="selectedCount">0</span>)
                                     </button>
                                     <div class="dropdown-menu">
-                                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#bulkAssignNetworkModal">
+                                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                                            data-modal-url="modals/asset/asset_interface_bulk_edit_network.php?client_id=<?= $client_id ?>"
+                                            data-bulk="true">
                                             <i class="fas fa-fw fa-network-wired mr-2"></i>Assign Network
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item text-dark" href="#" data-toggle="modal" data-target="#bulkSetInterfaceTypeModal">
+                                        <a class="dropdown-item text-dark ajax-modal" href="#"
+                                            data-modal-url="modals/asset/asset_interface_bulk_edit_type.php?client_id=<?= $client_id ?>"
+                                            data-bulk="true">
                                             <i class="fas fa-fw fa-ethernet mr-2"></i>Set Type
                                         </a>
                                         <div class="dropdown-divider"></div>
@@ -597,8 +601,6 @@ if (isset($_GET['asset_id'])) {
                                     </tbody>
                                 </table>
                             </div>
-                            <?php require_once "modals/asset/asset_interface_bulk_edit_type.php"; ?>
-                            <?php require_once "modals/asset/asset_interface_bulk_edit_network.php"; ?>
                         </form>
                     </div>
                 </div>
