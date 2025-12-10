@@ -558,7 +558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['login']) || isset($_
             <?php if($config_client_portal_enable == 1){ ?>
                 <hr>
                 <?php if (!empty($config_smtp_host)) { ?>
-                    <h5 class="text-center"><a href="client/login_reset.php">Forgot password?</a></h5>
+                    <a href="client/login_reset.php">Forgot password?</a>
                 <?php } ?>
                 <?php if (!empty($azure_client_id)) { ?>
                     <div class="col text-center mt-2">
