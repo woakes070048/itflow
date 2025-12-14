@@ -232,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['login']) || isset($_
                 //  If no/incorrect 'key' is supplied, send to client portal instead
                 if ($config_login_key_required) {
                     if (!isset($_GET['key']) || $_GET['key'] !== $config_login_key_secret) {
-                        redirect("client");
+                        redirect();
                     }
                 }
 
@@ -515,9 +515,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['login']) || isset($_
             <form method="post">
 
                 <div class="input-group mb-3" <?php if (isset($token_field) && $token_field) { echo "hidden"; } ?>>
-                    <input type="text" class="form-control" placeholder="Email" name="email"
-                           value="<?php echo htmlspecialchars($email ?? '', ENT_QUOTES); ?>"
-                           required <?php if (!isset($token_field) || !$token_field) { echo "autofocus"; } ?> >
+                    <input type="text" class="form-control"
+                        placeholder="<?php if ($config_login_key_required) { if (!isset($_GET['key']) || $_GET['key'] !== $config_login_key_secret) { echo "Client "; } } echo "Email"; ?>"
+                        name="email"
+                        value="<?php echo htmlspecialchars($email ?? '', ENT_QUOTES); ?>"
+                        required <?php if (!isset($token_field) || !$token_field) { echo "autofocus"; } ?>
+                    >
                     <div class="input-group-append">
                         <div class="input-group-text">
                             <span class="fas fa-envelope"></span>
