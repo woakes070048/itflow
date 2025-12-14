@@ -574,7 +574,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['login']) || isset($_
 </div>
 
 <?php
-if (isset($config_whitelabel_enabled) && !$config_whitelabel_enabled) {
+if (!$config_whitelabel_enabled) {
     echo '<small class="text-muted">Powered by ITFlow</small>';
 }
 ?>
