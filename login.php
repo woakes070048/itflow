@@ -99,6 +99,10 @@ $config_mail_from_name  = sanitizeInput($row['config_mail_from_name']);
 $config_client_portal_enable     = intval($row['config_client_portal_enable']);
 $config_login_remember_me_expire = intval($row['config_login_remember_me_expire']);
 
+// Login key (if setup)
+$config_login_key_required = $row['config_login_key_required'];
+$config_login_key_secret = $row['config_login_key_secret'];
+
 // Azure / Entra for client
 $azure_client_id = $row['config_azure_client_id'] ?? null;
 
@@ -224,6 +228,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['login']) || isset($_
             // AGENT LOGIN FLOW
             // =========================
             if ($selectedType === 1) {
+                // Login key verification
+                //  If no/incorrect 'key' is supplied, send to client portal instead
+                if ($config_login_key_required) {
+                    if (!isset($_GET['key']) || $_GET['key'] !== $config_login_key_secret) {
+                        redirect("client");
+                    }
+                }
 
                 $user_name                  = sanitizeInput($selectedRow['user_name']);
                 $token                      = sanitizeInput($selectedRow['user_token']);
